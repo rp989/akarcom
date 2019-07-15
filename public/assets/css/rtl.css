@@ -1,0 +1,60 @@
+body{
+    direction: rtl;
+    letter-spacing: 0;
+}
+.mainmenu .navbar-nav li a {
+    font-size: 16px;
+}
+.navbar-right{
+    text-align: right;
+}
+.navbar-collapse{
+    padding-left: 160px!important;
+}
+.header-text h2{
+    letter-spacing: 3px;
+}
+.header-text p{
+    letter-spacing: 1px;
+}
+.overview{
+    text-align: right;
+}
+/*.product-box .lower-content .view-etails-btn .link-box a .fa{*/
+    /*float: right;*/
+    /*margin: 4px;*/
+/*}*/
+.fa-angle-right:before {
+    content: "\f104";
+}
+.product-category{
+    left: unset!important;
+    right: 0px;
+}
+.product-price{
+    right: unset!important;
+    left: 0px;
+
+}
+.overview ul li p{
+float: right;
+}
+
+.overview ul li span{
+float: left;
+}
+.product-title p{
+    text-align: right;
+}
+.nav-tabs > li{
+    float: right!important;
+}
+#myTab > li > a > span.hidetext{
+    padding: 0 5px;
+}
+.nav-tabs > li > a:hover span{
+    float: right!important;
+}
+.nav-tabs > li > a span{
+    float: right!important;
+}

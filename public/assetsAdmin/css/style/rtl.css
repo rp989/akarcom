@@ -1,0 +1,129 @@
+.sidenav{
+    right: 0px;
+    left: unset;
+}
+
+
+
+.sidenav img {
+    margin-left: 38%;
+}
+
+.sidenav .closebtn {
+
+    left: -4px;
+    margin-left: 22px;
+    right: unset;
+    margin-right: unset;
+
+}
+
+.sidenav a{
+
+    display: flex;
+    direction: rtl;
+}
+
+.fa{
+    margin-left: 22px;
+    margin-right: 2px;
+    float: right;
+}
+.margen {
+
+    float: left !important;
+}
+
+.navbar-right {
+    float: left;
+    direction: rtl;
+}
+@media (min-width: 768px) {
+    .navbar-right {
+        float: left !important;
+        margin-left: 105px;
+    }
+}
+
+.mainLogo {
+    height: 48px;
+    margin-right: 45px;
+    float: right;
+}
+/*log IN*/
+.input100{
+    direction: rtl;
+    padding-right:55px;
+}.input1002{
+    direction: rtl;
+    padding-right:55px;
+}
+.label-input100{
+    padding-right: 7px;
+    padding-left: unset;
+    float: right;
+}
+.focus-input100::after{
+
+    right: 0;
+    left: unset;
+    padding-right: 13px;
+    padding-left:unset;
+}
+.alert-validate::before{
+    padding: 4px 10px 4px 25px;
+    left: 2px;
+    right: unset;
+}
+.alert-validate::after{
+    left: 8px;
+}
+.focus-input100::before{
+    right: 0;
+    left: unset;
+}
+.text-right{
+    text-align: left;
+}
+/*End log In*/
+/*admin*/
+.form-group{
+    display: flow-root;
+}
+.col-xs-2{
+    float: right!important;
+    text-align: right;
+}
+
+.inpr{
+    direction: rtl;
+}
+.sub{
+    float: right;
+}
+.pageName{
+    right: 262px;
+}
+.ro{
+    margin-right: 10px;
+    margin-top: 4px;
+}
+.load{
+    direction: rtl;
+}
+.parsley-custom-error-message , .img-upload, #img-upload{
+    float: right;
+}
+.ms #parsley-id-7{
+    left: unset;
+    right: 0px;
+}
+.dataTables_filter label{
+    direction: rtl;
+}
+ .tablee {
+    text-align: right;
+}
+ .roo{
+     text-align: right;
+ }
