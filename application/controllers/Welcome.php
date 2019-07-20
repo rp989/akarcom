@@ -1,7 +1,9 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-class Welcome extends CI_Controller
+include_once 'User.php';
+
+class Welcome extends User
 {
     public function guid()
     {
@@ -14,24 +16,733 @@ class Welcome extends CI_Controller
     public function __construct()
     {
         parent::__construct();
+
         $this->load->library('session');
         $this->lang->load('api', 'arabic');
         $this->session->set_userdata('lang', false);
+
+        if ($_SERVER['HTTP_HOST'] != 'localhost' && (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === "off" || $_SERVER['HTTP_HOST'] === 'akarcom.app')) {
+            if ($_SERVER['HTTP_HOST'] === 'akarcom.app') {
+                $location = 'https://www.' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+            } else {
+                $location = 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+            }
+            header('HTTP/1.1 301 Moved Permanently');
+            header('Location: ' . $location);
+            exit;
+        }
     }
 
-    public function index()
+    function nonFiler($page1 = null, $page2 = null, $page3 = null)
+    {
+        unset($_SESSION['search']);
+        redirect(base_url($page1 . '/' . $page2 . '/' . $page3));
+    }
+
+    public function index($page = null)
     {
         $this->load->model('Posts');
+        $config = array();
+        $config["base_url"] = base_url('index');
+        $config["total_rows"] = $this->Posts->count_all();
+        $config["per_page"] = 16;
+        $config["uri_segment"] = 2;
+        $config["use_page_numbers"] = TRUE;
+        $config["full_tag_open"] = '<ul class="pagination">';
+        $config["full_tag_close"] = '</ul>';
+        $config["first_tag_open"] = '<li>';
+        $config["first_tag_close"] = '</li>';
+        $config["last_tag_open"] = '<li>';
+        $config["last_tag_close"] = '</li>';
+        $config['next_link'] = '&gt;';
+        $config["next_tag_open"] = '<li>';
+        $config["next_tag_close"] = '</li>';
+        $config["prev_link"] = "&lt;";
+        $config["prev_tag_open"] = "<li>";
+        $config["prev_tag_close"] = "</li>";
+        $config["cur_tag_open"] = "<li class='active'><a href='#'>";
+        $config["cur_tag_close"] = "</a></li>";
+        $config["num_tag_open"] = "<li>";
+        $config["num_tag_close"] = "</li>";
+        $config["num_links"] = 2;
+        $this->pagination->initialize($config);
+        $page = $this->uri->segment(2);
+        $data['pages'] = $this->pagination->create_links();
+
         $ids = array();
         $idsOfKeyStart = false;
         $idsOfKeyEnd = false;
-        if (isset($_GET['all']) && $_GET['all'] === 'true'){
+        if (isset($_GET['all']) && $_GET['all'] === 'true') {
             $this->session->set_userdata('all', true);
-        }elseif(isset($_GET['all']) && $_GET['all'] === 'false') {
+        } elseif (isset($_GET['all']) && $_GET['all'] === 'false') {
+            $this->session->set_userdata('all', false);
+        }
+        $b = "";
+        if ($_POST) {
+            $arr = explode(';', $_POST['price-rang']);
+            $all_location = $this->Posts->getAllLocations($this->input->post(), $page);
+            $_POST['price-start'] = $arr[0];
+            $idsOfKeyStart = $arr[0];
+            $_POST['price-end'] = $arr[1];
+            $idsOfKeyEnd = $arr[1];
+            $Posts = $this->Posts->GetAllPostsWeb($this->input->post(), $page);
+            $cladding = $this->input->post('cladding');
+            $tapu = $this->input->post('tapu');
+            $properties = $this->input->post('properties');
+            $type = $this->input->post('type');
+            $ownership = $this->input->post('ownership');
+            $governorates = $this->input->post('governorates');
+            $isPhoto = $this->input->post('isPhotos');
+            if (isset($governorates)) {
+                array_push($ids, $governorates);
+//                foreach ($governorates as $value) {
+//
+//                }
+            }
+            if (isset($ownership)) {
+                array_push($ids, $ownership);
+            }
+            if (isset($type)) {
+                foreach ($type as $value) {
+                    array_push($ids, $value);
+                }
+            }
+            if (isset($tapu)) {
+                foreach ($tapu as $value) {
+                    array_push($ids, $value);
+                }
+            }
+            if (isset($cladding)) {
+                foreach ($cladding as $value) {
+                    array_push($ids, $value);
+                }
+            }
+            if (isset($properties)) {
+                foreach ($properties as $value) {
+                    array_push($ids, $value);
+                }
+            }
+            if (isset($isPhoto)) {
+                array_push($ids, $isPhoto);
+            }
+        } else {
+            $all_location = $this->Posts->getAllLocations(null, $page);
+            $Posts = $this->Posts->GetAllPostsWeb(null, $page);
+        }
+        $inforL = array();
+        $num_l = 0;
+
+        foreach ($all_location as $location) {
+            if ($location['p_active'] == 1) {
+                $infor[$num_l]['id'] = $location['p_id'];
+                if ($this->session->userdata('lang')) {
+                    $inforL[$num_l]['description'] = $location['p_description_en'];
+                    $inforL[$num_l]['address'] = $location['p_address_en'];
+                    $inforL[$num_l]['typeOfProperty']['id'] = $location['pp_id'];
+                    $inforL[$num_l]['typeOfProperty']['name'] = $location['pp_name_en'];
+                    $inforL[$num_l]['type']['id'] = $location['pt_id'];
+                    $inforL[$num_l]['type']['name'] = $location['pt_name_en'];
+                    $inforL[$num_l]['typeOfCladding']['id'] = $location['pc_id'];
+                    $inforL[$num_l]['typeOfCladding']['name'] = $location['pc_name_en'];
+                } else {
+                    $inforL[$num_l]['description'] = $location['p_description_ar'];
+                    $inforL[$num_l]['address'] = $location['p_address_ar'];
+                    $inforL[$num_l]['typeOfProperty']['id'] = $location['pp_id'];
+                    $inforL[$num_l]['typeOfProperty']['name'] = $location['pp_name_ar'];
+                    $inforL[$num_l]['type']['id'] = $location['pt_id'];
+                    $inforL[$num_l]['type']['name'] = $location['pt_name_ar'];
+                    $inforL[$num_l]['typeOfCladding']['id'] = $location['pc_id'];
+                    $inforL[$num_l]['typeOfCladding']['name'] = $location['pc_name_ar'];
+                }
+
+                $inforL[$num_l]['numOfRooms'] = $location['p_numOfRooms'];
+                $inforL[$num_l]['numOfBathRooms'] = $location['p_numOfBathRooms'];
+                $inforL[$num_l]['areaSpace'] = $location['p_areaSpace'];
+                $inforL[$num_l]['meridian'] = $location['p_meridian'];
+                $inforL[$num_l]['latitude'] = $location['p_latitude'];
+                $inforL[$num_l]['dateOfConstruction'] = $location['p_dateOfConstruction'];
+                $inforL[$num_l]['priceOfMeter'] = $location['por_price'];
+                $inforL[$num_l]['floor'] = $location['p_floor'];
+                $inforL[$num_l]['parking'] = $location['p_parking'] == '1' ? 'true' : 'false';
+                $inforL[$num_l]['elevator'] = $location['p_elevator'] == '1' ? 'true' : 'false';
+                $inforL[$num_l]['interphone'] = $location['p_interphone'] == '1' ? 'true' : 'false';
+                $inforL[$num_l]['summer'] = $location['p_summer'];
+                $inforL[$num_l]['winter'] = $location['p_winter'];
+                $inforL[$num_l]['numOfView'] = $location['p_numOfView_f'];
+                $inforL[$num_l]['governorate'] = $location['g_name_ar'];
+                $inforL[$num_l]['ownership'] = $location['po_name_ar'];
+                $inforL[$num_l]['ownership_id'] = $location['po_id'];
+                $inforL[$num_l]['number'] = $location['p_number'];
+                $inforL[$num_l]['timestamp'] = $this->getDate($location['p_timestamp']);
+
+
+                $images = $this->Posts->GetImagesOfPost($location['p_id']);
+                $photoUnset = false;
+                if ($images) {
+                    foreach ($images as $image) {
+//                            if ($image['pi_main'] == '1'){
+                        $inforL[$num_l]['images'][] = base_url() . $image['pi_image'];
+//                            }
+                    }
+                } else {
+                    $inforL[$num_l]['images'][0] = base_url() . 'public/images/no-photo.png';
+                    if (isset($isPhoto) && $isPhoto == '2') {
+                        $photoUnset = true;
+                        unset($inforL[$num_l]);
+                    }
+                }
+
+                $smallImage = "<img  src='" . urlencode($inforL[$num_l]['images'][0]) . "' style='width: 400px ; height: 161px ; ;' class=attachment-property_map1 size-property_map wp-post-image' alt='' />";
+                $url = base_url('posts/' . $location['p_number']);
+                if ($location['p_active'] == 4 || $location['p_active'] == 0) $url = "#";
+                $span = "<span  class='infocur infocur_first' style='direction: rtl'><span>" . $inforL[$num_l]['priceOfMeter'] . " <span class='infocur' ></span>";
+                $numOfView = $inforL[$num_l]['priceOfMeter'];
+                if ($location['p_address_ar'] == "" || $location['p_address_ar'] == null) $location['p_address_ar'] = "العنوان غير متوفر";
+                if ($location['p_numOfRooms'] == "") $location['p_numOfRooms'] = 0;
+                if ($location['p_areaSpace'] == "") $location['p_areaSpace'] = 0;
+                if ($location['por_price'] == "" || $location['por_price'] == null) {
+                    $location['por_price'] = 'غير متوفر';
+                }
+                if ($location['p_numOfBathRooms'] == "") $location['p_numOfBathRooms'] = 0;
+                if ($location['p_description_ar'] == null || $location['p_description_ar'] == "") $location['p_description_ar'] = "لا يوجد وصف";
+                $image = '<img width="100%" height="70" src="' . urlencode($inforL[$num_l]['images'][0]) . '" class="attachment-widget_thumb size-widget_thumb wp-post-image" alt="" srcset="' . urlencode($inforL[$num_l]['images'][0]) . ' 105w, ' . urlencode($inforL[$num_l]['images'][0]) . ' 300w, ' . urlencode($inforL[$num_l]['images'][0]) . ' 768w, ' . urlencode($inforL[$num_l]['images'][0]) . ' 1024w" sizes="(max-width: 105px) 100vw, 105px" />';
+                $image = urlencode($image);
+                /*
+                 * 0-title ->address
+                 * 1-location latitude
+                 * 2-location meridian
+                 * 3-counter => small image
+                 * 4-image
+                 * 5-price
+                 * 6-single_first_type
+                 * 7-single_first_action
+                 * 8-pin
+                 * 9-link
+                 * 10-id->id product
+                 * 11-cleanprice
+                 * 12-rooms
+                 * 13-baths
+                 * 14-size
+                 * 15-single_first_type_name
+                 * 16-single_first_action_name
+                 * 17-pin_price
+                 *
+                 * */
+
+
+                if ($location['p_latitude'] != "" && $location['p_latitude'] != null && $location['p_meridian'] != "" && $location['p_meridian'] != null) {
+                    $new_maps[] = array(
+                        word_limiter($location['p_address_ar'], 5),
+                        $location['p_latitude'],
+                        $location['p_meridian'],
+                        2,
+                        $smallImage,
+                        $span,
+                        '',
+                        '',
+                        '',
+                        urlencode($url),
+                        $location['p_id'],
+                        $location['por_price'],
+                        $location['p_numOfRooms'],
+                        $location['p_numOfBathRooms'],
+                        $location['p_areaSpace'],
+                        word_limiter($location['p_description_ar'], 10),
+                        $location['po_name_en'],
+                        $image
+                    );
+
+                }
+                $num_l++;
+            }
+
+        }
+        $infor = array();
+        if ($Posts) {
+            $numPost = 0;
+            foreach ($Posts as $Post) {
+
+                $infor[$numPost]['id'] = $Post['p_id'];
+                if ($this->session->userdata('lang')) {
+                    $infor[$numPost]['description'] = $Post['p_description_en'];
+                    $infor[$numPost]['address'] = $Post['p_address_en'];
+                    $infor[$numPost]['typeOfProperty']['id'] = $Post['pp_id'];
+                    $infor[$numPost]['typeOfProperty']['name'] = $Post['pp_name_en'];
+                    $infor[$numPost]['type']['id'] = $Post['pt_id'];
+                    $infor[$numPost]['type']['name'] = $Post['pt_name_en'];
+                    $infor[$numPost]['typeOfCladding']['id'] = $Post['pc_id'];
+                    $infor[$numPost]['typeOfCladding']['name'] = $Post['pc_name_en'];
+                } else {
+                    $infor[$numPost]['description'] = $Post['p_description_ar'];
+                    $infor[$numPost]['address'] = $Post['p_address_ar'];
+                    $infor[$numPost]['typeOfProperty']['id'] = $Post['pp_id'];
+                    $infor[$numPost]['typeOfProperty']['name'] = $Post['pp_name_ar'];
+                    $infor[$numPost]['type']['id'] = $Post['pt_id'];
+                    $infor[$numPost]['type']['name'] = $Post['pt_name_ar'];
+                    $infor[$numPost]['typeOfCladding']['id'] = $Post['pc_id'];
+                    $infor[$numPost]['typeOfCladding']['name'] = $Post['pc_name_ar'];
+                }
+                $infor[$numPost]['numOfRooms'] = $Post['p_numOfRooms'];
+                $infor[$numPost]['numOfBathRooms'] = $Post['p_numOfBathRooms'];
+                $infor[$numPost]['areaSpace'] = $Post['p_areaSpace'];
+                $infor[$numPost]['meridian'] = $Post['p_meridian'];
+                $infor[$numPost]['latitude'] = $Post['p_latitude'];
+                $infor[$numPost]['dateOfConstruction'] = $Post['p_dateOfConstruction'];
+                $infor[$numPost]['priceOfMeter'] = $Post['por_price'];
+                $infor[$numPost]['floor'] = $Post['p_floor'];
+                $infor[$numPost]['parking'] = $Post['p_parking'] == '1' ? 'true' : 'false';
+                $infor[$numPost]['elevator'] = $Post['p_elevator'] == '1' ? 'true' : 'false';
+                $infor[$numPost]['interphone'] = $Post['p_interphone'] == '1' ? 'true' : 'false';
+                $infor[$numPost]['summer'] = $Post['p_summer'];
+                $infor[$numPost]['winter'] = $Post['p_winter'];
+                $infor[$numPost]['numOfView'] = $Post['p_numOfView_f'];
+                $infor[$numPost]['governorate'] = $Post['g_name_ar'];
+                $infor[$numPost]['ownership'] = $Post['po_name_ar'];
+                $infor[$numPost]['timestamp'] = $this->getDate($Post['p_timestamp']);
+                $infor[$numPost]['area'] = $Post['area'];
+                $infor[$numPost]['active'] = $Post['p_active'];
+                $infor[$numPost]['number'] = $Post['p_number'];
+                $images = $this->Posts->GetImagesOfPost($Post['p_id']);
+                $photoUnset = false;
+                if ($images) {
+                    foreach ($images as $image) {
+//                            if ($image['pi_main'] == '1'){
+                        $infor[$numPost]['images'][] = base_url() . $image['pi_image'];
+//                            }
+                    }
+                } else {
+                    $infor[$numPost]['images'][0] = base_url() . 'public/images/no-photo.png';
+                    if (isset($isPhoto) && $isPhoto == '2') {
+                        $photoUnset = true;
+                        unset($infor[$numPost]);
+                    }
+                }
+
+
+                if (!$photoUnset) {
+                    $numPost++;
+                }
+
+            }
+
+        } else {
+            $infor = $this->lang->line('NoResult');
+        }
+        $vip = $this->Posts->GetAllPostsWeb(null, null, null, true);
+        $array_vip = array();
+        $num_l = 0;
+        foreach ($vip as $location) {
+            if ($location['p_active'] == 1) {
+                $array_vip[$num_l]['id'] = $location['p_id'];
+                if ($this->session->userdata('lang')) {
+                    $array_vip[$num_l]['description'] = $location['p_description_en'];
+                    $array_vip[$num_l]['address'] = $location['p_address_en'];
+                    $array_vip[$num_l]['typeOfProperty']['id'] = $location['pp_id'];
+                    $array_vip[$num_l]['typeOfProperty']['name'] = $location['pp_name_en'];
+                    $array_vip[$num_l]['type']['id'] = $location['pt_id'];
+                    $array_vip[$num_l]['type']['name'] = $location['pt_name_en'];
+                    $array_vip[$num_l]['typeOfCladding']['id'] = $location['pc_id'];
+                    $array_vip[$num_l]['typeOfCladding']['name'] = $location['pc_name_en'];
+                } else {
+                    $array_vip[$num_l]['description'] = $location['p_description_ar'];
+                    $array_vip[$num_l]['address'] = $location['p_address_ar'];
+                    $array_vip[$num_l]['typeOfProperty']['id'] = $location['pp_id'];
+                    $array_vip[$num_l]['typeOfProperty']['name'] = $location['pp_name_ar'];
+                    $array_vip[$num_l]['type']['id'] = $location['pt_id'];
+                    $array_vip[$num_l]['type']['name'] = $location['pt_name_ar'];
+                    $array_vip[$num_l]['typeOfCladding']['id'] = $location['pc_id'];
+                    $array_vip[$num_l]['typeOfCladding']['name'] = $location['pc_name_ar'];
+                }
+
+                $array_vip[$num_l]['numOfRooms'] = $location['p_numOfRooms'];
+                $array_vip[$num_l]['numOfBathRooms'] = $location['p_numOfBathRooms'];
+                $array_vip[$num_l]['areaSpace'] = $location['p_areaSpace'];
+                $array_vip[$num_l]['meridian'] = $location['p_meridian'];
+                $array_vip[$num_l]['latitude'] = $location['p_latitude'];
+                $array_vip[$num_l]['dateOfConstruction'] = $location['p_dateOfConstruction'];
+                $array_vip[$num_l]['priceOfMeter'] = $location['por_price'];
+                $array_vip[$num_l]['floor'] = $location['p_floor'];
+                $array_vip[$num_l]['parking'] = $location['p_parking'] == '1' ? 'true' : 'false';
+                $array_vip[$num_l]['elevator'] = $location['p_elevator'] == '1' ? 'true' : 'false';
+                $array_vip[$num_l]['interphone'] = $location['p_interphone'] == '1' ? 'true' : 'false';
+                $array_vip[$num_l]['summer'] = $location['p_summer'];
+                $array_vip[$num_l]['winter'] = $location['p_winter'];
+                $array_vip[$num_l]['numOfView'] = $location['p_numOfView_f'];
+                $array_vip[$num_l]['active'] = $location['p_active'];
+                $array_vip[$num_l]['area'] = $location['area'];
+                $array_vip[$num_l]['governorate'] = $location['g_name_ar'];
+                $array_vip[$num_l]['ownership'] = $location['po_name_ar'];
+                $array_vip[$num_l]['number'] = $location['p_number'];
+                $array_vip[$num_l]['ownership_id'] = $location['po_id'];
+                $array_vip[$num_l]['timestamp'] = $this->getDate($location['p_timestamp']);
+
+
+                $images = $this->Posts->GetImagesOfPost($location['p_id']);
+                $photoUnset = false;
+                if ($images) {
+                    foreach ($images as $image) {
+//                            if ($image['pi_main'] == '1'){
+                        $array_vip[$num_l]['images'][] = base_url() . $image['pi_image'];
+//                            }
+                    }
+                } else {
+                    $array_vip[$num_l]['images'][0] = base_url() . 'public/images/no-photo.png';
+                    if (isset($isPhoto) && $isPhoto == '2') {
+                        $photoUnset = true;
+                        unset($array_vip[$num_l]);
+                    }
+                }
+                $num_l++;
+            }
+
+        }
+
+
+        $data['vip'] = $array_vip;
+        $data['new_maps'] = json_encode($new_maps);
+        $data['posts'] = $infor;
+        $data['startPrice'] = $idsOfKeyStart;
+        $data['endPrice'] = $idsOfKeyEnd;
+        $data['OptionMaps'] = $this->Posts->GetOptionMaps();
+        $data['data'] = $this->InitializedPost();
+
+        $this->load->view('home_new', $data);
+    }
+
+    public function search($page = null)
+    {
+        $this->load->model('Posts');
+
+        if (count($_POST) == 0) {
+            redirect(base_url());
+        }
+        $ids = array();
+        $idsOfKeyStart = false;
+        $idsOfKeyEnd = false;
+        if (isset($_GET['all']) && $_GET['all'] === 'true') {
+            $this->session->set_userdata('all', true);
+        } elseif (isset($_GET['all']) && $_GET['all'] === 'false') {
+            $this->session->set_userdata('all', false);
+        }
+        if ($_POST) {
+
+            //            $arr = explode(';', $_POST['price-rang']);
+            $all_location = $this->Posts->getAllLocations($this->input->post(), $page);
+            $_POST['price-startprice-start'] = $_POST['price-rang'][0];
+            $idsOfKeyStart = $_POST['price-rang'][0];
+            $_POST['price-end'] = $_POST['price-rang'][1];
+
+            $idsOfKeyEnd = $_POST['price-rang'][1];
+            $Posts = $this->Posts->GetAllPostsWeb($this->input->post(), $page, true);
+            $cladding = $this->input->post('cladding');
+            $tapu = $this->input->post('tapu');
+            $properties = $this->input->post('properties');
+            $type = $this->input->post('type');
+            $ownership = $this->input->post('ownership');
+            $governorates = $this->input->post('governorates');
+            $isPhoto = $this->input->post('isPhotos');
+            if (isset($governorates)) {
+                array_push($ids, $governorates);
+                //                foreach ($governorates as $value) {
+                //
+                //                }
+            }
+            if (isset($ownership)) {
+                array_push($ids, $ownership);
+            }
+            if (isset($type)) {
+                foreach ($type as $value) {
+                    array_push($ids, $value);
+                }
+            }
+            if (isset($tapu)) {
+                foreach ($tapu as $value) {
+                    array_push($ids, $value);
+                }
+            }
+            if (isset($cladding)) {
+                foreach ($cladding as $value) {
+                    array_push($ids, $value);
+                }
+            }
+            if (isset($properties)) {
+                foreach ($properties as $value) {
+                    array_push($ids, $value);
+                }
+            }
+            if (isset($isPhoto)) {
+                array_push($ids, $isPhoto);
+            }
+        } else {
+            $all_location = $this->Posts->getAllLocations(null, $page);
+            $Posts = $this->Posts->GetAllPostsWeb(null, $page, true);
+        }
+        $maps = '';
+        $inforL = array();
+        $num_l = 0;
+
+        foreach ($all_location as $location) {
+            if ($location['p_active'] == 1) {
+                $infor[$num_l]['id'] = $location['p_id'];
+                if ($this->session->userdata('lang')) {
+                    $inforL[$num_l]['description'] = $location['p_description_en'];
+                    $inforL[$num_l]['address'] = $location['p_address_en'];
+                    $inforL[$num_l]['typeOfProperty']['id'] = $location['pp_id'];
+                    $inforL[$num_l]['typeOfProperty']['name'] = $location['pp_name_en'];
+                    $inforL[$num_l]['type']['id'] = $location['pt_id'];
+                    $inforL[$num_l]['type']['name'] = $location['pt_name_en'];
+                    $inforL[$num_l]['typeOfCladding']['id'] = $location['pc_id'];
+                    $inforL[$num_l]['typeOfCladding']['name'] = $location['pc_name_en'];
+                } else {
+                    $inforL[$num_l]['description'] = $location['p_description_ar'];
+                    $inforL[$num_l]['address'] = $location['p_address_ar'];
+                    $inforL[$num_l]['typeOfProperty']['id'] = $location['pp_id'];
+                    $inforL[$num_l]['typeOfProperty']['name'] = $location['pp_name_ar'];
+                    $inforL[$num_l]['type']['id'] = $location['pt_id'];
+                    $inforL[$num_l]['type']['name'] = $location['pt_name_ar'];
+                    $inforL[$num_l]['typeOfCladding']['id'] = $location['pc_id'];
+                    $inforL[$num_l]['typeOfCladding']['name'] = $location['pc_name_ar'];
+                }
+
+                $inforL[$num_l]['numOfRooms'] = $location['p_numOfRooms'];
+                $inforL[$num_l]['numOfBathRooms'] = $location['p_numOfBathRooms'];
+                $inforL[$num_l]['areaSpace'] = $location['p_areaSpace'];
+                $inforL[$num_l]['meridian'] = $location['p_meridian'];
+                $inforL[$num_l]['latitude'] = $location['p_latitude'];
+                $inforL[$num_l]['dateOfConstruction'] = $location['p_dateOfConstruction'];
+                $inforL[$num_l]['priceOfMeter'] = $location['por_price'];
+                $inforL[$num_l]['floor'] = $location['p_floor'];
+                $inforL[$num_l]['parking'] = $location['p_parking'] == '1' ? 'true' : 'false';
+                $inforL[$num_l]['elevator'] = $location['p_elevator'] == '1' ? 'true' : 'false';
+                $inforL[$num_l]['interphone'] = $location['p_interphone'] == '1' ? 'true' : 'false';
+                $inforL[$num_l]['summer'] = $location['p_summer'];
+                $inforL[$num_l]['winter'] = $location['p_winter'];
+                $inforL[$num_l]['numOfView'] = $location['p_numOfView_f'];
+                $inforL[$num_l]['governorate'] = $location['g_name_ar'];
+                $inforL[$num_l]['ownership'] = $location['po_name_ar'];
+                $inforL[$num_l]['timestamp'] = $this->getDate($location['p_timestamp']);
+
+                $images = $this->Posts->GetImagesOfPost($location['p_id']);
+                $photoUnset = false;
+                if ($images) {
+                    foreach ($images as $image) {
+                        //                            if ($image['pi_main'] == '1'){
+                        $inforL[$num_l]['images'][] = base_url() . $image['pi_image'];
+                        //                            }
+                    }
+                } else {
+                    $inforL[$num_l]['images'][0] = base_url() . 'public/images/no-photo.png';
+                    if (isset($isPhoto) && $isPhoto == '2') {
+                        $photoUnset = true;
+                        unset($inforL[$num_l]);
+                    }
+                }
+
+                $smallImage = "<img  src='" . urlencode($inforL[$num_l]['images'][0]) . "' style='width: 400px ; height: 161px' class=attachment-property_map1 size-property_map1 wp-post-image' alt='' />";
+                $url = base_url('posts/' . $location['p_id']);
+                $span = "<span  class='infocur infocur_first' style='direction: rtl'><span>" . $inforL[$num_l]['priceOfMeter'] . " <span class='infocur' ></span>";
+                $numOfView = $inforL[$num_l]['timestamp'];
+                $maps .= '[\"' . word_limiter($location['p_address_ar'], 20) . '\",' . $location['p_latitude'] . ',' . $location['p_meridian'] . ',2,\"' . $smallImage . ' \",\"' . $span . ' \",\"\",\"\",\"\",\"' . urlencode($url) . '\",18331,10101010101,\"' . $location['p_numOfBathRooms'] . '\",\"' . $location['p_numOfRooms'] . '\",\"' . $location['p_areaSpace'] . 'm<sup>2<\\\/sup>\",\"' . word_limiter($location['p_description_ar'], 15) . '\",\"\",\"' . ($numOfView) . '\",\"%3Cimg%20width%3D%22105%22%20height%3D%2270%22%20src%3D%22https%3A%2F%2Fchicago.wpresidence.net%2Fwp-content%2Fuploads%2F2017%2F08%2Fdemo13-105x70.jpg%22%20class%3D%22attachment-widget_thumb%20size-widget_thumb%20wp-post-image%22%20alt%3D%22%22%20srcset%3D%22https%3A%2F%2Fchicago.wpresidence.net%2Fwp-content%2Fuploads%2F2017%2F08%2Fdemo13-105x70.jpg%20105w%2C%20https%3A%2F%2Fchicago.wpresidence.net%2Fwp-content%2Fuploads%2F2017%2F08%2Fdemo13-300x200.jpg%20300w%2C%20https%3A%2F%2Fchicago.wpresidence.net%2Fwp-content%2Fuploads%2F2017%2F08%2Fdemo13-768x512.jpg%20768w%2C%20https%3A%2F%2Fchicago.wpresidence.net%2Fwp-content%2Fuploads%2F2017%2F08%2Fdemo13-1024x683.jpg%201024w%22%20sizes%3D%22%28max-width%3A%20105px%29%20100vw%2C%20105px%22%20%2F%3E\"]';
+//        .......................................................
+                $smallImage = "<img  src='" . urlencode($inforL[$num_l]['images'][0]) . "' style='width: 400px ; height: 161px ; ;' class=attachment-property_map1 size-property_map wp-post-image' alt='' />";
+                $url = base_url('posts/' . $location['p_id']);
+                $span = "<span  class='infocur infocur_first' style='direction: rtl'><span>" . $inforL[$num_l]['priceOfMeter'] . " <span class='infocur' ></span>";
+                $numOfView = $inforL[$num_l]['priceOfMeter'];
+                if ($location['p_address_ar'] == "" || $location['p_address_ar'] == null) $location['p_address_ar'] = "العنوان غير متوفر";
+                if ($location['p_numOfRooms'] == "") $location['p_numOfRooms'] = 0;
+                if ($location['p_areaSpace'] == "") $location['p_areaSpace'] = 0;
+                if ($location['por_price'] == "" || $location['por_price'] == null) {
+                    $location['por_price'] = 'غير متوفر';
+                }
+                if ($location['p_numOfBathRooms'] == "") $location['p_numOfBathRooms'] = 0;
+                if ($location['p_description_ar'] == null || $location['p_description_ar'] == "") $location['p_description_ar'] = "لا يوجد وصف";
+                $image = '<img width="100%" height="70" src="' . urlencode($inforL[$num_l]['images'][0]) . '" class="attachment-widget_thumb size-widget_thumb wp-post-image" alt="" srcset="' . urlencode($inforL[$num_l]['images'][0]) . ' 105w, ' . urlencode($inforL[$num_l]['images'][0]) . ' 300w, ' . urlencode($inforL[$num_l]['images'][0]) . ' 768w, ' . urlencode($inforL[$num_l]['images'][0]) . ' 1024w" sizes="(max-width: 105px) 100vw, 105px" />';
+                $image = urlencode($image);
+                /*
+                 * 0-title ->address
+                 * 1-location latitude
+                 * 2-location meridian
+                 * 3-counter => small image
+                 * 4-image
+                 * 5-price
+                 * 6-single_first_type
+                 * 7-single_first_action
+                 * 8-pin
+                 * 9-link
+                 * 10-id->id product
+                 * 11-cleanprice
+                 * 12-rooms
+                 * 13-baths
+                 * 14-size
+                 * 15-single_first_type_name
+                 * 16-single_first_action_name
+                 * 17-pin_price
+                 *
+                 * */
+
+                if ($location['p_latitude'] != "" && $location['p_latitude'] != null && $location['p_meridian'] != "" && $location['p_meridian'] != null) {
+                    $new_maps[] = array(
+                        $location['p_address_ar'],
+                        $location['p_latitude'],
+                        $location['p_meridian'],
+                        6,
+                        $smallImage,
+                        $span,
+                        '',
+                        '',
+                        '',
+                        urlencode($url),
+                        $location['p_id'],
+                        $location['por_price'],
+                        $location['p_numOfRooms'],
+                        $location['p_numOfBathRooms'],
+                        $location['p_areaSpace'],
+                        $location['p_address_en'],
+                        $location['p_numOfView_f'],
+                        $image
+                    );
+
+                }
+
+                if ($num_l < count($all_location) - 1) {
+                    $maps .= ',';
+                }
+                $num_l++;
+                //                echo count($all_location)."-".$num_l."<hr>";
+            }
+
+        }
+
+        $infor = array();
+
+        if ($Posts) {
+            $numPost = 0;
+            foreach ($Posts as $Post) {
+                if ($Post['p_active'] == 1) {
+                    $infor[$numPost]['id'] = $Post['p_id'];
+                    if ($this->session->userdata('lang')) {
+                        $infor[$numPost]['description'] = $Post['p_description_en'];
+                        $infor[$numPost]['address'] = $Post['p_address_en'];
+                        $infor[$numPost]['typeOfProperty']['id'] = $Post['pp_id'];
+                        $infor[$numPost]['typeOfProperty']['name'] = $Post['pp_name_en'];
+                        $infor[$numPost]['type']['id'] = $Post['pt_id'];
+                        $infor[$numPost]['type']['name'] = $Post['pt_name_en'];
+                        $infor[$numPost]['typeOfCladding']['id'] = $Post['pc_id'];
+                        $infor[$numPost]['typeOfCladding']['name'] = $Post['pc_name_en'];
+                    } else {
+                        $infor[$numPost]['description'] = $Post['p_description_ar'];
+                        $infor[$numPost]['address'] = $Post['p_address_ar'];
+                        $infor[$numPost]['typeOfProperty']['id'] = $Post['pp_id'];
+                        $infor[$numPost]['typeOfProperty']['name'] = $Post['pp_name_ar'];
+                        $infor[$numPost]['type']['id'] = $Post['pt_id'];
+                        $infor[$numPost]['type']['name'] = $Post['pt_name_ar'];
+                        $infor[$numPost]['typeOfCladding']['id'] = $Post['pc_id'];
+                        $infor[$numPost]['typeOfCladding']['name'] = $Post['pc_name_ar'];
+                    }
+
+                    $infor[$numPost]['numOfRooms'] = $Post['p_numOfRooms'];
+                    $infor[$numPost]['numOfBathRooms'] = $Post['p_numOfBathRooms'];
+                    $infor[$numPost]['areaSpace'] = $Post['p_areaSpace'];
+                    $infor[$numPost]['meridian'] = $Post['p_meridian'];
+                    $infor[$numPost]['latitude'] = $Post['p_latitude'];
+                    $infor[$numPost]['dateOfConstruction'] = $Post['p_dateOfConstruction'];
+                    $infor[$numPost]['priceOfMeter'] = $Post['por_price'];
+                    $infor[$numPost]['floor'] = $Post['p_floor'];
+                    $infor[$numPost]['parking'] = $Post['p_parking'] == '1' ? 'true' : 'false';
+                    $infor[$numPost]['elevator'] = $Post['p_elevator'] == '1' ? 'true' : 'false';
+                    $infor[$numPost]['interphone'] = $Post['p_interphone'] == '1' ? 'true' : 'false';
+                    $infor[$numPost]['summer'] = $Post['p_summer'];
+                    $infor[$numPost]['winter'] = $Post['p_winter'];
+                    $infor[$numPost]['numOfView'] = $Post['p_numOfView_f'];
+                    $infor[$numPost]['governorate'] = $Post['g_name_ar'];
+                    $infor[$numPost]['ownership'] = $Post['po_name_ar'];
+                    $infor[$numPost]['timestamp'] = $this->getDate($Post['p_timestamp']);
+
+                    $images = $this->Posts->GetImagesOfPost($Post['p_id']);
+                    $photoUnset = false;
+                    if ($images) {
+                        foreach ($images as $image) {
+                            //                            if ($image['pi_main'] == '1'){
+                            $infor[$numPost]['images'][] = base_url() . $image['pi_image'];
+                            //                            }
+                        }
+                    } else {
+                        $infor[$numPost]['images'][0] = base_url() . 'public/images/no-photo.png';
+                        if (isset($isPhoto) && $isPhoto == '2') {
+                            $photoUnset = true;
+                            unset($infor[$numPost]);
+                        }
+                    }
+
+
+                    if (!$photoUnset) {
+                        $numPost++;
+                    }
+                }
+            }
+
+        } else {
+            $infor = $this->lang->line('NoResult');
+        }
+        $maps .= "]";
+        $count = $this->Posts->count_all($this->input->post());;
+        $data['maps'] = '[' . $maps . '';
+        $data['posts'] = $infor;
+        $data['ids'] = $ids;
+        $data['startPrice'] = $idsOfKeyStart;
+        $data['endPrice'] = $idsOfKeyEnd;
+        $data['data'] = $this->InitializedPost();
+        $config = array();
+        $config["base_url"] = base_url('search');
+        $config["total_rows"] = $this->Posts->count_all($this->input->post());
+        $config["per_page"] = $count + 1;
+        $config["uri_segment"] = 2;
+        $config["use_page_numbers"] = TRUE;
+        $config["full_tag_open"] = '<ul class="pagination">';
+        $config["full_tag_close"] = '</ul>';
+        $config["first_tag_open"] = '<li>';
+        $config["first_tag_close"] = '</li>';
+        $config["last_tag_open"] = '<li>';
+        $config["last_tag_close"] = '</li>';
+        $config['next_link'] = '&gt;';
+        $config["next_tag_open"] = '<li>';
+        $config["next_tag_close"] = '</li>';
+        $config["prev_link"] = "&lt;";
+        $config["prev_tag_open"] = "<li>";
+        $config["prev_tag_close"] = "</li>";
+        $config["cur_tag_open"] = "<li class='active'><a href='#'>";
+        $config["cur_tag_close"] = "</a></li>";
+        $config["num_tag_open"] = "<li>";
+        $config["num_tag_close"] = "</li>";
+        $config["num_links"] = 2;
+        $this->pagination->initialize($config);
+        $page = $this->uri->segment(2);
+        $data['pages'] = $this->pagination->create_links();
+        $data['OptionMaps'] = $this->Posts->GetOptionMaps();
+
+        $this->load->view('home_new', $data);
+
+    }
+
+    public function cards()
+    {
+
+        $this->load->model('Posts');
+        session_destroy();
+        $ids = array();
+        $idsOfKeyStart = false;
+        $idsOfKeyEnd = false;
+        if (isset($_GET['all']) && $_GET['all'] === 'true') {
+            $this->session->set_userdata('all', true);
+        } elseif (isset($_GET['all']) && $_GET['all'] === 'false') {
             $this->session->set_userdata('all', false);
         }
         if ($_POST) {
             $arr = explode(';', $_POST['price-rang']);
+
+            $GovernorateId = '7A742620-3E3C-46FC-8136-4D32EB27174F';
+            $AllLocations = $this->Posts->GetAllPosts($GovernorateId, $this->input->post());
+
             $_POST['price-start'] = $arr[0];
             $idsOfKeyStart = $arr[0];
             $_POST['price-end'] = $arr[1];
@@ -73,13 +784,14 @@ class Welcome extends CI_Controller
                     array_push($ids, $value);
                 }
             }
-            if (isset($isPhoto)){
+            if (isset($isPhoto)) {
                 array_push($ids, $isPhoto);
             }
         } else {
             $Posts = $this->Posts->GetAllPostsWeb();
         }
         $infor = array();
+        $maps = '';
         if ($Posts) {
             $numPost = 0;
             foreach ($Posts as $Post) {
@@ -104,6 +816,7 @@ class Welcome extends CI_Controller
                         $infor[$numPost]['typeOfCladding']['id'] = $Post['pc_id'];
                         $infor[$numPost]['typeOfCladding']['name'] = $Post['pc_name_ar'];
                     }
+
                     $infor[$numPost]['numOfRooms'] = $Post['p_numOfRooms'];
                     $infor[$numPost]['numOfBathRooms'] = $Post['p_numOfBathRooms'];
                     $infor[$numPost]['areaSpace'] = $Post['p_areaSpace'];
@@ -121,173 +834,259 @@ class Welcome extends CI_Controller
                     $infor[$numPost]['governorate'] = $Post['g_name_ar'];
                     $infor[$numPost]['ownership'] = $Post['po_name_ar'];
                     $infor[$numPost]['timestamp'] = $this->getDate($Post['p_timestamp']);
+
                     $images = $this->Posts->GetImagesOfPost($Post['p_id']);
                     $photoUnset = false;
                     if ($images) {
                         foreach ($images as $image) {
-                            if ($image['pi_main'] == '1'){
-                                $infor[$numPost]['images'] = base_url() . $image['pi_image'];
-                            }
+//                            if ($image['pi_main'] == '1'){
+                            $infor[$numPost]['images'][] = base_url() . $image['pi_image'];
+//                            }
                         }
-                    }else {
-                        $infor[$numPost]['images'] = base_url() . 'public/images/no-photo.png';
-                        if (isset($isPhoto) && $isPhoto == '2'){
+                    } else {
+                        $infor[$numPost]['images'][0] = base_url() . 'public/images/no-photo.png';
+                        if (isset($isPhoto) && $isPhoto == '2') {
                             $photoUnset = true;
                             unset($infor[$numPost]);
                         }
                     }
-                    if (!$photoUnset){
+
+                    $smallImage = "<img  src='" . urlencode($infor[$numPost]['images'][0]) . "' style='width: 400px ; height: 161px' class=attachment-property_map1 size-property_map1 wp-post-image' alt='' />";
+//                    echo $smallImage.'<hr>' ;
+//                    $smallImage = urlencode($smallImage);
+                    $url = base_url('posts/' . $Post['p_id']);
+                    $span = "<span  class='infocur infocur_first' style='direction: rtl'><span>" . $infor[$numPost]['priceOfMeter'] . " <span class='infocur' ></span>";
+                    $numOfView = $infor[$numPost]['timestamp'];
+                    $maps .= '[\"' . $Post['p_address_ar'] . '\",' . $Post['p_latitude'] . ',' . $Post['p_meridian'] . ',2,\"' . $smallImage . ' \",\"' . $span . ' \",\"\",\"\",\"\",\"' . urlencode($url) . '\",18331,10101010101,\"' . $Post['p_numOfBathRooms'] . '\",\"' . $Post['p_numOfRooms'] . '\",\"' . $Post['p_areaSpace'] . 'm<sup>2<\\\/sup>\",\"' . $Post['p_description_ar'] . '\",\"\",\"' . ($numOfView) . '\",\"%3Cimg%20width%3D%22105%22%20height%3D%2270%22%20src%3D%22https%3A%2F%2Fchicago.wpresidence.net%2Fwp-content%2Fuploads%2F2017%2F08%2Fdemo13-105x70.jpg%22%20class%3D%22attachment-widget_thumb%20size-widget_thumb%20wp-post-image%22%20alt%3D%22%22%20srcset%3D%22https%3A%2F%2Fchicago.wpresidence.net%2Fwp-content%2Fuploads%2F2017%2F08%2Fdemo13-105x70.jpg%20105w%2C%20https%3A%2F%2Fchicago.wpresidence.net%2Fwp-content%2Fuploads%2F2017%2F08%2Fdemo13-300x200.jpg%20300w%2C%20https%3A%2F%2Fchicago.wpresidence.net%2Fwp-content%2Fuploads%2F2017%2F08%2Fdemo13-768x512.jpg%20768w%2C%20https%3A%2F%2Fchicago.wpresidence.net%2Fwp-content%2Fuploads%2F2017%2F08%2Fdemo13-1024x683.jpg%201024w%22%20sizes%3D%22%28max-width%3A%20105px%29%20100vw%2C%20105px%22%20%2F%3E\"]';
+                    if ($numPost < count($Posts) - 1) {
+                        $maps .= ',';
+                    }
+                    if (!$photoUnset) {
                         $numPost++;
                     }
 
+
                 }
             }
+
+
         } else {
             $infor = $this->lang->line('NoResult');
         }
+        $i = 0;
+
+        $maps .= "]";
+//        $config['total_rows'] = $this->searchdesc_model->queryallrows();
+//        $config['per_page'] = '5';
+//        $config['uri_segment'] =4;
+//        $config['full_tag_open'] = '<p>';
+//        $config['full_tag_close'] = '</p>';
+//        $config['cur_tag_open'] = '<b>';
+//        $config['cur_tag_close'] = '</b>';
+//        $config['first_link'] = ' First';
+//        $config['last_link'] = ' Last';
+//        $config['last_tag_open'] = '<p>';
+//        $config['last_tag_close'] = '</p>';
+//        $config['next_link'] = '';
+//        $config['next_tag_open'] = '<p id="nextbutton" style="padding-left:5px;">';
+//        $config['next_tag_close'] = '</p>';
+//        $config['prev_link'] = '';
+//        $config['prev_tag_open'] = '<p id="prevbutton" style="padding-right:5px;">';
+//        $config['prev_tag_close'] = '</p>';
+//        $config['num_links']=4;
+//        $data['retorno'] = $this->searchdesc_model->queryalldb($config['per_page'],$this->uri->segment(4,0));
+//        $config['total_rows']=1000;
+//        $this->pagination->initialize($config);
+
+
+        $data['maps'] = '[' . $maps . '';
+//         $data['maps'] = ;
         $data['posts'] = $infor;
         $data['ids'] = $ids;
         $data['startPrice'] = $idsOfKeyStart;
         $data['endPrice'] = $idsOfKeyEnd;
         $data['data'] = $this->InitializedPost();
 
-        $this->load->view('home', $data);
+        $this->load->view('cards', $data);
+
+    }
+
+    public function all()
+    {
+
     }
 
     public function productDetails($id)
     {
-        if  (!$this->session->userdata('userId')){
-            $actual_link = "http://{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}";
-            $this->session->set_userdata('urlEntered', $actual_link);
-            $newURL = base_url() . 'SignIn';
-            header('Location: ' . $newURL);
-            exit;
-        }
         $PostId = $id;
         $this->load->model('Posts');
         $Posts = $this->Posts->GetPost($PostId);
+//        echo '<pre>';
+//        print_r($Posts);
+        if (!$this->session->userdata('userId')) {
+            $actual_link = "http://{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}";
+            $this->session->set_userdata('urlEntered', $actual_link);
+            $meta = array();
+            $meta[] = '<meta  name="description" content="' . $Posts[0]['p_description_ar'] . ' ' . $Posts[0]['p_address_ar'] . ' ">';
+            $meta[] = '<meta  name="keywords" content="' . $Posts[0]['p_description_ar'] . ' ' . $Posts[0]['p_address_ar'] . ' ">';
+            $meta[] = '<meta name="author" content="Akarcom">';
+            $images = $this->Posts->GetImagesOfPost($Posts[0]['p_id']);
+//            print_r($images);
+            $meta[] = '<meta property="og:image"  content="' . base_url($images[0]['pi_image']) . '">';
+            $meta[] = '<meta property="og:url"  content="' . $actual_link . '">';
+            $meta[] = '<meta property="og:title"  content=" akarcom | عقاركم  ' . $Posts[0]["p_description_ar"] . '">';
+            $meta[] = '<meta property="og:type" content="article" />';
+            $meta[]='<link rel="shortcut icon" href="'.base_url($images[0]['pi_image']) .'"  type="image/x-icon" />';
+            $newURL = base_url() . 'SignIn';
+            $this->session->set_userdata('meta', $meta);
+            header('Location: ' . $newURL);
+            exit;
+//            return;
+        }
+        $new_maps = array();
+        if (count($Posts) <= 0) {
+            redirect(base_url());
+        }
         $info = array();
         if ($Posts) {
             $numPost = 0;
             foreach ($Posts as $Post) {
-                if ($Post['p_active'] == 1) {
-                    $info[$numPost]['id'] = $Post['p_id'];
-                    if ($this->session->userdata('lang')) {
-                        $info[$numPost]['description'] = $Post['p_description_en'];
-                        $info[$numPost]['address'] = $Post['p_address_en'];
-                        $info[$numPost]['typeOfProperty']['id'] = $Post['pp_id'];
-                        $info[$numPost]['typeOfProperty']['name'] = $Post['pp_name_en'];
-                        $info[$numPost]['type']['id'] = $Post['pt_id'];
-                        $info[$numPost]['type']['name'] = $Post['pt_name_en'];
-                        $info[$numPost]['typeOfCladding']['id'] = $Post['pc_id'];
-                        $info[$numPost]['typeOfCladding']['name'] = $Post['pc_name_en'];
-                    } else {
-                        $info[$numPost]['description'] = $Post['p_description_ar'];
-                        $info[$numPost]['address'] = $Post['p_address_ar'];
-                        $info[$numPost]['typeOfProperty']['id'] = $Post['pp_id'];
-                        $info[$numPost]['typeOfProperty']['name'] = $Post['pp_name_ar'];
-                        $info[$numPost]['type']['id'] = $Post['pt_id'];
-                        $info[$numPost]['type']['name'] = $Post['pt_name_ar'];
-                        $info[$numPost]['typeOfCladding']['id'] = $Post['pc_id'];
-                        $info[$numPost]['typeOfCladding']['name'] = $Post['pc_name_ar'];
-                    }
-                    $info[$numPost]['numOfRooms'] = $Post['p_numOfRooms'];
-                    $info[$numPost]['numOfBathRooms'] = $Post['p_numOfBathRooms'];
-                    $info[$numPost]['areaSpace'] = $Post['p_areaSpace'];
-                    $info[$numPost]['meridian'] = $Post['p_meridian'];
-                    $info[$numPost]['latitude'] = $Post['p_latitude'];
-                    $info[$numPost]['dateOfConstruction'] = $Post['p_dateOfConstruction'];
-                    $info[$numPost]['priceOfMeter'] = $Post['por_price'];
-                    $info[$numPost]['floor'] = $Post['p_floor'];
-                    $info[$numPost]['parking'] = $Post['p_parking'] == '1' ? 'true' : 'false';
-                    $info[$numPost]['elevator'] = $Post['p_elevator'] == '1' ? 'true' : 'false';
-                    $info[$numPost]['interphone'] = $Post['p_interphone'] == '1' ? 'true' : 'false';
-                    $info[$numPost]['summer'] = $Post['p_summer'];
-                    $info[$numPost]['winter'] = $Post['p_winter'];
-                    $info[$numPost]['timestamp'] = $this->getDate($Post['p_timestamp']);
-                    $info[$numPost]['name'] = $Post['p_userInfo'];
-                    $info[$numPost]['gsm'] = $Post['p_gsm'];
-                    $info[$numPost]['governorate'] = $Post['g_name_ar'];
-                    $images = $this->Posts->GetImagesOfPost($Post['p_id']);
-//                    var_dump($images);exit;
-                    if ($images) {
-                        $num = 0;
-                        foreach ($images as $image) {
-                            $info[$numPost]['images'][$num] = base_url() . '/' . $image['pi_image'];
-                            $num++;
-                        }
-                    }else {
-                        $info[$numPost]['images'][0] = base_url() .'public/images/no-photo.png';
-                    }
-                    $numPost++;
+//                if ($Post['p_active'] == 1) {
+                $info[$numPost]['id'] = $Post['p_id'];
+                if ($this->session->userdata('lang')) {
+                    $info[$numPost]['description'] = $Post['p_description_en'];
+                    $info[$numPost]['address'] = $Post['p_address_en'];
+                    $info[$numPost]['typeOfProperty']['id'] = $Post['pp_id'];
+                    $info[$numPost]['typeOfProperty']['name'] = $Post['pp_name_en'];
+                    $info[$numPost]['type']['id'] = $Post['pt_id'];
+                    $info[$numPost]['type']['name'] = $Post['pt_name_en'];
+                    $info[$numPost]['typeOfCladding']['id'] = $Post['pc_id'];
+                    $info[$numPost]['typeOfCladding']['name'] = $Post['pc_name_en'];
+                } else {
+                    $info[$numPost]['description'] = $Post['p_description_ar'];
+                    $info[$numPost]['address'] = $Post['p_address_ar'];
+                    $info[$numPost]['typeOfProperty']['id'] = $Post['pp_id'];
+                    $info[$numPost]['typeOfProperty']['name'] = $Post['pp_name_ar'];
+                    $info[$numPost]['type']['id'] = $Post['pt_id'];
+                    $info[$numPost]['type']['name'] = $Post['pt_name_ar'];
+                    $info[$numPost]['typeOfCladding']['id'] = $Post['pc_id'];
+                    $info[$numPost]['typeOfCladding']['name'] = $Post['pc_name_ar'];
                 }
+
+                $info[$numPost]['numOfRooms'] = $Post['p_numOfRooms'];
+                $info[$numPost]['p_numOfView'] = $Post['p_numOfView_f'];
+                $info[$numPost]['numOfBathRooms'] = $Post['p_numOfBathRooms'];
+                $info[$numPost]['areaSpace'] = $Post['p_areaSpace'];
+                $info[$numPost]['meridian'] = $Post['p_meridian'];
+                $info[$numPost]['latitude'] = $Post['p_latitude'];
+                $info[$numPost]['dateOfConstruction'] = $Post['p_dateOfConstruction'];
+                $info[$numPost]['priceOfMeter'] = $Post['por_price'];
+                $info[$numPost]['floor'] = $Post['p_floor'];
+                $info[$numPost]['parking'] = $Post['p_parking'] == '1' ? 'true' : 'false';
+                $info[$numPost]['elevator'] = $Post['p_elevator'] == '1' ? 'true' : 'false';
+                $info[$numPost]['interphone'] = $Post['p_interphone'] == '1' ? 'true' : 'false';
+                $info[$numPost]['summer'] = $Post['p_summer'];
+                $info[$numPost]['winter'] = $Post['p_winter'];
+                $info[$numPost]['timestamp'] = $this->getDate($Post['p_timestamp']);
+                $info[$numPost]['name'] = $Post['p_userInfo'];
+                $info[$numPost]['gsm'] = $Post['p_gsm'];
+                $info[$numPost]['governorate'] = $Post['g_name_ar'];
+                $info[$numPost]['tapu'] = $Post['pta_name_ar'];
+                $info[$numPost]['number'] = $Post['p_number'];
+                $info[$numPost]['ownership'] = $this->Posts->GetOwnershipPost($info[$numPost]['id']);
+
+                $images = $this->Posts->GetImagesOfPost($Post['p_id']);
+//                    var_dump($images);exit;
+                if ($images) {
+                    $num = 0;
+                    foreach ($images as $image) {
+                        $info[$numPost]['images'][$num] = base_url() . '/' . $image['pi_image'];
+                        $num++;
+                    }
+                } else {
+                    $info[$numPost]['images'][0] = base_url() . 'public/images/no-photo.png';
+                }
+
+                $numPost++;
+//                }
             }
         }
         $data['post1'] = $info;
-//        var_dump($data['post1']);exit;
+//        var_dump($data['post1']);exit;latitude
 
         $GovernorateId = '7A742620-3E3C-46FC-8136-4D32EB27174F';
-        $Posts = $this->Posts->Get3Posts($GovernorateId);
+        $Posts = $this->Posts->Get3Posts($GovernorateId, $info[0]['latitude'], $info[0]['meridian']);
+
         $infor = array();
         if ($Posts) {
             $numPost = 0;
             foreach ($Posts as $Post) {
                 if ($Post['p_active'] == 1 && $Post['p_id'] != $id) {
                     $infor[$numPost]['id'] = $Post['p_id'];
-                    if ($this->session->userdata('lang')) {
-                        $infor[$numPost]['description'] = $Post['p_description_en'];
-                        $infor[$numPost]['address'] = $Post['p_address_en'];
-                        $infor[$numPost]['typeOfProperty']['id'] = $Post['pp_id'];
-                        $infor[$numPost]['typeOfProperty']['name'] = $Post['pp_name_en'];
-                        $infor[$numPost]['type']['id'] = $Post['pt_id'];
-                        $infor[$numPost]['type']['name'] = $Post['pt_name_en'];
-                        $infor[$numPost]['typeOfCladding']['id'] = $Post['pc_id'];
-                        $infor[$numPost]['typeOfCladding']['name'] = $Post['pc_name_en'];
-                    } else {
-                        $infor[$numPost]['description'] = $Post['p_description_ar'];
-                        $infor[$numPost]['address'] = $Post['p_address_ar'];
-                        $infor[$numPost]['typeOfProperty']['id'] = $Post['pp_id'];
-                        $infor[$numPost]['typeOfProperty']['name'] = $Post['pp_name_ar'];
-                        $infor[$numPost]['type']['id'] = $Post['pt_id'];
-                        $infor[$numPost]['type']['name'] = $Post['pt_name_ar'];
-                        $infor[$numPost]['typeOfCladding']['id'] = $Post['pc_id'];
-                        $infor[$numPost]['typeOfCladding']['name'] = $Post['pc_name_ar'];
-                    }
-                    $infor[$numPost]['numOfRooms'] = $Post['p_numOfRooms'];
-                    $infor[$numPost]['numOfBathRooms'] = $Post['p_numOfBathRooms'];
-                    $infor[$numPost]['areaSpace'] = $Post['p_areaSpace'];
-                    $infor[$numPost]['meridian'] = $Post['p_meridian'];
-                    $infor[$numPost]['latitude'] = $Post['p_latitude'];
-                    $infor[$numPost]['dateOfConstruction'] = $Post['p_dateOfConstruction'];
-                    $infor[$numPost]['priceOfMeter'] = $Post['por_price'];
-                    $infor[$numPost]['floor'] = $Post['p_floor'];
-                    $infor[$numPost]['parking'] = $Post['p_parking'] == '1' ? 'true' : 'false';
-                    $infor[$numPost]['elevator'] = $Post['p_elevator'] == '1' ? 'true' : 'false';
-                    $infor[$numPost]['interphone'] = $Post['p_interphone'] == '1' ? 'true' : 'false';
-                    $infor[$numPost]['summer'] = $Post['p_summer'];
-                    $infor[$numPost]['winter'] = $Post['p_winter'];
-                    $info[$numPost]['governorate'] = $Post['g_name_ar'];
-                    $infor[$numPost]['numOfView'] = $Post['p_numOfView'];
-                    $infor[$numPost]['timestamp'] = $this->getDate($Post['p_timestamp']);
-                    $infor[$numPost]['name'] = $Post['p_userInfo'];
-                    $infor[$numPost]['GSM'] = $Post['p_gsm'];
-                    $images = $this->Posts->GetImagesOfPost($Post['p_id']);
-                    if ($images) {
-                        $num = 0;
-                        foreach ($images as $image) {
-                            $info[$numPost]['images'][$num] = base_url() . $image['pi_image'];
-                            $num++;
+                    if ($Post['p_active'] == 1) {
+                        if ($this->session->userdata('lang')) {
+                            $infor[$numPost]['description'] = $Post['p_description_en'];
+                            $infor[$numPost]['address'] = $Post['p_address_en'];
+                            $infor[$numPost]['typeOfProperty']['id'] = $Post['pp_id'];
+                            $infor[$numPost]['typeOfProperty']['name'] = $Post['pp_name_en'];
+                            $infor[$numPost]['type']['id'] = $Post['pt_id'];
+                            $infor[$numPost]['type']['name'] = $Post['pt_name_en'];
+                            $infor[$numPost]['typeOfCladding']['id'] = $Post['pc_id'];
+                            $infor[$numPost]['typeOfCladding']['name'] = $Post['pc_name_en'];
+                        } else {
+                            $infor[$numPost]['description'] = $Post['p_description_ar'];
+                            $infor[$numPost]['address'] = $Post['p_address_ar'];
+                            $infor[$numPost]['typeOfProperty']['id'] = $Post['pp_id'];
+                            $infor[$numPost]['typeOfProperty']['name'] = $Post['pp_name_ar'];
+                            $infor[$numPost]['type']['id'] = $Post['pt_id'];
+                            $infor[$numPost]['type']['name'] = $Post['pt_name_ar'];
+                            $infor[$numPost]['typeOfCladding']['id'] = $Post['pc_id'];
+                            $infor[$numPost]['typeOfCladding']['name'] = $Post['pc_name_ar'];
                         }
-                    }else {
-                        $infor[$numPost]['images'][0] = base_url() .'public/images/no-photo.png';
-                    }
+                        $infor[$numPost]['numOfRooms'] = $Post['p_numOfRooms'];
+                        $infor[$numPost]['p_numOfView'] = $Post['p_numOfView_f'];
+                        $infor[$numPost]['numOfBathRooms'] = $Post['p_numOfBathRooms'];
+                        $infor[$numPost]['areaSpace'] = $Post['p_areaSpace'];
+                        $infor[$numPost]['meridian'] = $Post['p_meridian'];
+                        $infor[$numPost]['latitude'] = $Post['p_latitude'];
+                        $infor[$numPost]['dateOfConstruction'] = $Post['p_dateOfConstruction'];
+                        $infor[$numPost]['priceOfMeter'] = $Post['por_price'];
+                        $infor[$numPost]['floor'] = $Post['p_floor'];
+                        $infor[$numPost]['parking'] = $Post['p_parking'] == '1' ? 'true' : 'false';
+                        $infor[$numPost]['elevator'] = $Post['p_elevator'] == '1' ? 'true' : 'false';
+                        $infor[$numPost]['interphone'] = $Post['p_interphone'] == '1' ? 'true' : 'false';
+                        $infor[$numPost]['summer'] = $Post['p_summer'];
+                        $infor[$numPost]['winter'] = $Post['p_winter'];
+                        $infor[$numPost]['timestamp'] = $this->getDate($Post['p_timestamp']);
+                        $infor[$numPost]['name'] = $Post['p_userInfo'];
+                        $infor[$numPost]['gsm'] = $Post['p_gsm'];
+                        $infor[$numPost]['tapu'] = $Post['pta_name_ar'];
+                        $infor[$numPost]['governorate'] = $Post['g_name_ar'];
+                        $infor[$numPost]['active'] = $Post['p_active'];
+                        $infor[$numPost]['number'] = $Post['p_number'];
 
-                    $numPost++;
+                        $infor[$numPost]['ownership'] = $this->Posts->GetOwnershipPost($infor[$numPost]['id']);
+
+                        $images = $this->Posts->GetImagesOfPost($Post['p_id']);
+//                    var_dump($images);exit;
+                        if ($images) {
+                            $num = 0;
+                            foreach ($images as $image) {
+                                $infor[$numPost]['images'][$num] = base_url() . '/' . $image['pi_image'];
+                                $num++;
+                            }
+                        } else {
+                            $infor[$numPost]['images'][0] = base_url() . 'public/images/no-photo.png';
+                        }
+
+                        $numPost++;
+                    }
                 }
             }
         }
         $data['posts'] = $infor;
-        $this->load->view('productDetails', $data);
+        $data['new_maps'] = json_encode($new_maps);
+        $this->load->view('new1_productDetails', $data);
     }
 
     public function AllPosts()
@@ -378,7 +1177,7 @@ class Welcome extends CI_Controller
                     $infor[$numPost]['summer'] = $Post['p_summer'];
                     $infor[$numPost]['winter'] = $Post['p_winter'];
                     $info[$numPost]['governorate'] = $Post['g_name_ar'];
-                    $info[$numPost]['numOfView'] = $Post['p_numOfView'];
+                    $info[$numPost]['numOfView'] = $Post['p_numOfView_f'];
                     $infor[$numPost]['timestamp'] = $this->getDate($Post['p_timestamp']);
                     $numPost++;
                 }
@@ -479,7 +1278,8 @@ class Welcome extends CI_Controller
         return $result;
     }
 
-    public function API() {
+    public function API()
+    {
         $this->load->view('api');
     }
 
@@ -508,12 +1308,12 @@ class Welcome extends CI_Controller
                                 $this->session->set_userdata('name', $result['u_name']);
                                 $this->session->set_userdata('session', $this->guid());
                                 $this->session->set_userdata('admin', true);
-                                if ($this->session->userdata('urlEntered')){
+                                if ($this->session->userdata('urlEntered')) {
                                     $newURL = $this->session->userdata('urlEntered');
                                     $this->session->set_userdata('urlEntered', null);
                                     header('Location: ' . $newURL);
                                     exit;
-                                }else {
+                                } else {
                                     $newURL = base_url() . 'MemberArea';
                                     header('Location: ' . $newURL);
                                     exit;
@@ -525,17 +1325,16 @@ class Welcome extends CI_Controller
                                 $this->session->set_userdata('name', $result['u_name']);
                                 $this->session->set_userdata('session', $this->guid());
                                 $this->session->set_userdata('admin', false);
-                                if ($this->session->userdata('urlEntered')){
+                                if ($this->session->userdata('urlEntered')) {
                                     $newURL = $this->session->userdata('urlEntered');
                                     $this->session->set_userdata('urlEntered', null);
                                     header('Location: ' . $newURL);
                                     exit;
-                                }else {
+                                } else {
                                     $newURL = base_url() . 'MemberArea';
                                     header('Location: ' . $newURL);
                                     exit;
                                 }
-
                             } elseif ($result['u_active'] == 0) {
                                 $error = $this->lang->line('you_account_not_activation_yet');
                             } elseif ($result['u_active'] == 3) {
@@ -553,9 +1352,10 @@ class Welcome extends CI_Controller
             }
         }
         $data['error'] = $error;
-        $this->load->view('admin/include/templet/notification.php');
+//        $this->load->view('admin/include/templet/notification.php');
         $this->load->view('admin/include/lang/Ar.php');
-        $this->load->view('admin/index', $data);
+//        $this->load->view('admin/index', $data);
+        $this->render_page('login', $data);
     }
 
     public function Register()
@@ -575,7 +1375,7 @@ class Welcome extends CI_Controller
                 if (is_numeric($GSM) && strlen((string)$GSM) == 10 && $GSM{0} == 0 && $GSM{1} == 9) {
                     $this->load->model('UsersAuth');
                     $GSM = (int)$GSM;
-                    $this->UsersAuth->register($this->guid(),$name,$GSM,$Password,$active = 1);
+                    $this->UsersAuth->register($this->guid(), $name, $GSM, $Password, $active = 1);
                 } else {
                     $error = $this->lang->line('check_your_gsm_number_is_valid');
                 }
@@ -584,23 +1384,26 @@ class Welcome extends CI_Controller
             }
         }
         $data['error'] = $error;
-        $this->load->view('admin/include/templet/notification.php');
+//        $this->load->view('admin/include/templet/notification.php');
         $this->load->view('admin/include/lang/Ar.php');
-        $this->load->view('admin/register',$data);
+//        $this->load->view('admin/register', $data);
+        $this->render_page('register', $data);
     }
 
     public function Forgot()
     {
-        $this->load->view('admin/include/templet/notification.php');
+//        $this->load->view('admin/include/templet/notification.php');
         $this->load->view('admin/include/lang/Ar.php');
-        $this->load->view('admin/forgot');
+//        $this->load->view('admin/forgot');
+        $this->render_page('forgot');
     }
 
     public function Activation()
     {
-        $this->load->view('admin/include/templet/notification.php');
+//        $this->load->view('admin/include/templet/notification.php');
         $this->load->view('admin/include/lang/Ar.php');
-        $this->load->view('admin/activation');
+//        $this->load->view('admin/activation');
+        $this->render_page('activation');
     }
 
     public function CodeActivation()
@@ -610,30 +1413,33 @@ class Welcome extends CI_Controller
         $this->load->view('admin/codeActivation');
     }
 
-    private function SendSMS(){
+    private function SendSMS()
+    {
         $msg = 'hi i am working!';
-        $gsm = '963'.'993995989';
+        $gsm = '963' . '993995989';
         $password = 'arTak111';
         $user = 'SAY467';
         $from = 'Akarkom';
-            $msg = urlencode($msg);
+        $msg = urlencode($msg);
 //            $url = 'http://services.mtn.com.sy/General/MTNSERVICES/ConcatenatedSender.aspx?User='.$user.'&Pass='.$password.'&From='.$from.'&Gsm='.$gsm.'&Msg='.$msg.'&Lang=1';
-            $url = 'https://services.mtnsyr.com:7443/General/MTNSERVICES/ConcatenatedSender.aspx?User='.$user.'&Pass='.$password.'&From='.$from.'&Gsm='.$gsm.'&Msg='.$msg.'&Lang=1';
-            $ch = curl_init($url);
-            curl_setopt($ch, CURLOPT_HEADER, false);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            $contents = curl_exec($ch);
-            curl_close($ch);
+        $url = 'https://services.mtnsyr.com:7443/General/MTNSERVICES/ConcatenatedSender.aspx?User=' . $user . '&Pass=' . $password . '&From=' . $from . '&Gsm=' . $gsm . '&Msg=' . $msg . '&Lang=1';
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_HEADER, false);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $contents = curl_exec($ch);
+        curl_close($ch);
         echo '<br><br><br><br><br><br><br>';
         var_dump($contents);
         exit;
     }
 
-    public function googleMap(){
+    public function googleMap()
+    {
         $this->load->view('googleMap');
     }
 
-    public function getGSM() {
+    public function getGSM()
+    {
         $cars = array(
             '933651802',
             '944605595',
@@ -16772,8 +17578,8 @@ class Welcome extends CI_Controller
             '964585290'
         );
         $this->load->model('UsersAuth');
-        foreach ($full as $value){
-            $this->UsersAuth->addNumber('0'.$value);
+        foreach ($full as $value) {
+            $this->UsersAuth->addNumber('0' . $value);
         }
         exit;
 //        $msg = 'd8add985d98420d8a7d984d8aad8b7d8a8d98ad98220d8a7d984d8a7d988d98420d981d98a20d8b3d988d8b1d98ad8a720d984d984d8b3d98ad8a7d8b1d8a7d8aa20d8a7d984d8aad98a20d8aad8b1d98ad8af20d8a8d8b3d987d988d984d8a920 ';
@@ -16781,11 +17587,11 @@ class Welcome extends CI_Controller
         $msg = 'حمل التطبيق الاول في سوريا للسيارات التي تريد بسهولة ';
         $msg = bin2hex($msg);
         $msg = urlencode($msg);
-        $gsm = '963'.'993995989';
+        $gsm = '963' . '993995989';
         $password = 'arTak111';
         $user = 'SAY467';
         $from = 'Sayartak';
-        $url = 'https://services.mtnsyr.com:7443/General/MTNSERVICES/ConcatenatedSender.aspx?User='.$user.'&Pass='.$password.'&From='.$from.'&Gsm='.$gsm.'&Msg='.$msg.'&Lang=0';
+        $url = 'https://services.mtnsyr.com:7443/General/MTNSERVICES/ConcatenatedSender.aspx?User=' . $user . '&Pass=' . $password . '&From=' . $from . '&Gsm=' . $gsm . '&Msg=' . $msg . '&Lang=0';
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_HEADER, false);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -16796,68 +17602,68 @@ class Welcome extends CI_Controller
         $msg = 'حمل التطبيق الاول في سوريا للسيارات التي تريد بسهولة ';
         $msg .= 'shorturl.at/fimDQ';
         $msg = urlencode($msg);
-       foreach ($results as $result){
-           $gsm = '963'.$result;
-           $password = 'arTak111';
-           $user = 'SAY467';
-           $from = 'Sayartak';
-           $url = 'https://services.mtnsyr.com:7443/General/MTNSERVICES/ConcatenatedSender.aspx?User='.$user.'&Pass='.$password.'&From='.$from.'&Gsm='.$gsm.'&Msg='.$msg.'&Lang=1';
-           $ch = curl_init($url);
-           curl_setopt($ch, CURLOPT_HEADER, false);
-           curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-           $contents[] = curl_exec($ch);
-           curl_close($ch);
-       }
-       echo json_encode($contents);
+        foreach ($results as $result) {
+            $gsm = '963' . $result;
+            $password = 'arTak111';
+            $user = 'SAY467';
+            $from = 'Sayartak';
+            $url = 'https://services.mtnsyr.com:7443/General/MTNSERVICES/ConcatenatedSender.aspx?User=' . $user . '&Pass=' . $password . '&From=' . $from . '&Gsm=' . $gsm . '&Msg=' . $msg . '&Lang=1';
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_HEADER, false);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            $contents[] = curl_exec($ch);
+            curl_close($ch);
+        }
+        echo json_encode($contents);
     }
 
-
-    private function getDate($Oldtimestamp){
+    private function getDate($Oldtimestamp)
+    {
         $newTimeStamp = time();
         $def = $newTimeStamp - $Oldtimestamp;
-        $numMenits = (int) (abs($def)/60);
-        $numHours = (int) (abs($def)/60/60);
-        $numDays = (int) (abs($def)/60/60/24);
-        $numMonths = (int) (abs($def)/60/60/24/30);
+        $numMenits = (int)(abs($def) / 60);
+        $numHours = (int)(abs($def) / 60 / 60);
+        $numDays = (int)(abs($def) / 60 / 60 / 24);
+        $numMonths = (int)(abs($def) / 60 / 60 / 24 / 30);
 
-        if ($numMonths != 0){
-            if ($numMonths == 1 ){
-                $string =  'منذ شهر واحدة';
-            }elseif ($numMonths == 2){
-                $string =  'منذ شهرين';
-            }else{
+        if ($numMonths != 0) {
+            if ($numMonths == 1) {
+                $string = 'منذ شهر واحدة';
+            } elseif ($numMonths == 2) {
+                $string = 'منذ شهرين';
+            } else {
                 $string = 'منذ ';
-                $string .=  $numMonths;
+                $string .= $numMonths;
                 $string .= ' أشهر  ';
             }
-        }elseif ($numDays != 0){
-            if ($numDays == 1 ){
-                $string =  'منذ يوم واحد';
-            }elseif ($numDays == 2){
-                $string =  'منذ يومين';
-            }else{
+        } elseif ($numDays != 0) {
+            if ($numDays == 1) {
+                $string = 'منذ يوم واحد';
+            } elseif ($numDays == 2) {
+                $string = 'منذ يومين';
+            } else {
                 $string = 'منذ ';
-                $string .=  $numDays;
+                $string .= $numDays;
                 $string .= ' ايام ';
             }
-        }elseif ($numHours != 0){
-            if ($numHours == 1 ){
-                $string =  'منذ ساعة واحدة';
-            }elseif ($numHours == 2){
-                $string =  'منذ ساعتين';
-            }else{
+        } elseif ($numHours != 0) {
+            if ($numHours == 1) {
+                $string = 'منذ ساعة واحدة';
+            } elseif ($numHours == 2) {
+                $string = 'منذ ساعتين';
+            } else {
                 $string = 'منذ ';
-                $string .=  $numHours;
+                $string .= $numHours;
                 $string .= ' ساعة ';
             }
-        }else{
-            if ($numMenits == 0 || $numMenits == 1 ){
-                $string =  'منذ دقيقة واحدة';
-            }elseif ($numMenits == 2){
-                $string =  'منذ دقيقتين';
-            }else{
+        } else {
+            if ($numMenits == 0 || $numMenits == 1) {
+                $string = 'منذ دقيقة واحدة';
+            } elseif ($numMenits == 2) {
+                $string = 'منذ دقيقتين';
+            } else {
                 $string = 'منذ ';
-                $string .=  $numMenits;
+                $string .= $numMenits;
                 $string .= ' دقيقة ';
             }
         }
@@ -16865,4 +17671,864 @@ class Welcome extends CI_Controller
         return $string;
 
     }
+
+// new function  1/6/2019
+
+    public function newSearch($para = null)
+    {
+        $maps = '';
+        $new_maps = array();
+        $this->load->model('Posts');
+        $model = $this->Posts;
+        if ($_POST) {
+            $_SESSION['search'] = null;
+            if (isset($_POST['price-rang'])) {
+                $_SESSION['search']['start_price'] = $_POST['price-rang'][0];
+                $_SESSION['search']['end_price'] = $_POST['price-rang'][1];
+            }
+            if (isset($_POST['ownership'])) {
+                $_SESSION['search']['ownership'] = $_POST['ownership'];
+            }
+            if (isset($_POST['type'])) {
+                $_SESSION['search']['type'] = $_POST['type'];
+            }
+            if (isset($_POST['tapu'])) {
+                $_SESSION['search']['tapu'] = $_POST['tapu'];
+            }
+            if (isset($_POST['properties'])) {
+                $_SESSION['search']['properties'] = $_POST['properties'];
+            }
+            if (isset($_POST['cladding'])) {
+                $_SESSION['search']['cladding'] = $_POST['cladding'];
+            }
+            if (isset($_POST['isPhotos'])) {
+                $_SESSION['search']['isPhotos'] = 1;
+            }
+            if (isset($_POST['governorates'])) {
+                $_SESSION['search']['governorates'] = $_POST['governorates'];
+
+            }
+        }
+        if (isset($_SESSION['search'])) {
+
+            $Posts = $model->new_search($para);
+            $numPost = 0;
+            $infor = array();
+            foreach ($Posts as $Post) {
+
+                $infor[$numPost]['id'] = $Post['p_id'];
+                if ($this->session->userdata('lang')) {
+                    $infor[$numPost]['description'] = $Post['p_description_en'];
+                    $infor[$numPost]['address'] = $Post['p_address_en'];
+                    $infor[$numPost]['typeOfProperty']['id'] = $Post['pp_id'];
+                    $infor[$numPost]['typeOfProperty']['name'] = $Post['pp_name_en'];
+                    $infor[$numPost]['type']['id'] = $Post['pt_id'];
+                    $infor[$numPost]['type']['name'] = $Post['pt_name_en'];
+                    $infor[$numPost]['typeOfCladding']['id'] = $Post['pc_id'];
+                    $infor[$numPost]['typeOfCladding']['name'] = $Post['pc_name_en'];
+                } else {
+                    $infor[$numPost]['description'] = $Post['p_description_ar'];
+                    $infor[$numPost]['address'] = $Post['p_address_ar'];
+                    $infor[$numPost]['typeOfProperty']['id'] = $Post['pp_id'];
+                    $infor[$numPost]['typeOfProperty']['name'] = $Post['pp_name_ar'];
+                    $infor[$numPost]['type']['id'] = $Post['pt_id'];
+                    $infor[$numPost]['type']['name'] = $Post['pt_name_ar'];
+                    $infor[$numPost]['typeOfCladding']['id'] = $Post['pc_id'];
+                    $infor[$numPost]['typeOfCladding']['name'] = $Post['pc_name_ar'];
+                }
+
+                $infor[$numPost]['numOfRooms'] = $Post['p_numOfRooms'];
+                $infor[$numPost]['numOfBathRooms'] = $Post['p_numOfBathRooms'];
+                $infor[$numPost]['areaSpace'] = $Post['p_areaSpace'];
+                $infor[$numPost]['meridian'] = $Post['p_meridian'];
+                $infor[$numPost]['latitude'] = $Post['p_latitude'];
+                $infor[$numPost]['dateOfConstruction'] = $Post['p_dateOfConstruction'];
+                $infor[$numPost]['priceOfMeter'] = $Post['por_price'];
+                $infor[$numPost]['floor'] = $Post['p_floor'];
+                $infor[$numPost]['parking'] = $Post['p_parking'] == '1' ? 'true' : 'false';
+                $infor[$numPost]['elevator'] = $Post['p_elevator'] == '1' ? 'true' : 'false';
+                $infor[$numPost]['interphone'] = $Post['p_interphone'] == '1' ? 'true' : 'false';
+                $infor[$numPost]['summer'] = $Post['p_summer'];
+                $infor[$numPost]['winter'] = $Post['p_winter'];
+                $infor[$numPost]['numOfView'] = $Post['p_numOfView_f'];
+                $infor[$numPost]['governorate'] = $Post['g_name_ar'];
+                $infor[$numPost]['ownership'] = $Post['po_name_ar'];
+                $infor[$numPost]['timestamp'] = $this->getDate($Post['p_timestamp']);
+                $infor[$numPost]['active'] = $Post['p_active'];
+                $infor[$numPost]['area'] = $Post['area'];
+
+                $images = $this->Posts->GetImagesOfPost($Post['p_id']);
+                $photoUnset = false;
+                if ($images) {
+                    foreach ($images as $image) {
+                        //                            if ($image['pi_main'] == '1'){
+                        $infor[$numPost]['images'][] = base_url() . $image['pi_image'];
+                        //                            }
+                    }
+                } else {
+                    $infor[$numPost]['images'][0] = base_url() . 'public/images/no-photo.png';
+                    if (isset($isPhoto) && $isPhoto == '2') {
+                        $photoUnset = true;
+                        unset($infor[$numPost]);
+                    }
+                }
+
+                $smallImage = "<img  src='" . urlencode($infor[$numPost]['images'][0]) . "' style='width: 400px ; height: 161px' class=attachment-property_map1 size-property_map1 wp-post-image' alt='' />";
+                $url = base_url('Details/' . $infor[$numPost]['id']);
+                $span = "<span  class='infocur infocur_first' style='direction: rtl'><span>" . $infor[$numPost]['priceOfMeter'] . " <span class='infocur' ></span>";
+                $numOfView = $infor[$numPost]['priceOfMeter'];
+//                $maps .= '[\"' . word_limiter($infor[$numPost]['address'], 20) . '\",' . $infor[$numPost]['latitude'] . ',' . $infor[$numPost]['meridian'] . ',2,\"' . $smallImage . ' \",\"' . $span . ' \",\"\",\"\",\"\",\"' . urlencode($url) . '\",18331,10101010101,\"' . $infor[$numPost]['numOfBathRooms'] . '\",\"' . $infor[$numPost]['numOfRooms'] . '\",\"' . $infor[$numPost]['areaSpace'] . 'm<sup>2<\\\/sup>\",\"' . word_limiter($infor[$numPost]['description'], 15) . '\",\"\",\"' . ($numOfView) . '\",\"%3Cimg%20width%3D%22105%22%20height%3D%2270%22%20src%3D%22https%3A%2F%2Fchicago.wpresidence.net%2Fwp-content%2Fuploads%2F2017%2F08%2Fdemo13-105x70.jpg%22%20class%3D%22attachment-widget_thumb%20size-widget_thumb%20wp-post-image%22%20alt%3D%22%22%20srcset%3D%22https%3A%2F%2Fchicago.wpresidence.net%2Fwp-content%2Fuploads%2F2017%2F08%2Fdemo13-105x70.jpg%20105w%2C%20https%3A%2F%2Fchicago.wpresidence.net%2Fwp-content%2Fuploads%2F2017%2F08%2Fdemo13-300x200.jpg%20300w%2C%20https%3A%2F%2Fchicago.wpresidence.net%2Fwp-content%2Fuploads%2F2017%2F08%2Fdemo13-768x512.jpg%20768w%2C%20https%3A%2F%2Fchicago.wpresidence.net%2Fwp-content%2Fuploads%2F2017%2F08%2Fdemo13-1024x683.jpg%201024w%22%20sizes%3D%22%28max-width%3A%20105px%29%20100vw%2C%20105px%22%20%2F%3E\"]';
+//                $smallImage = "<img  src='" . urlencode($inforL[$numPost]['images'][0]) . "' style='width: 400px ; height: 161px ; ;' class=attachment-property_map1 size-property_map wp-post-image' alt='' />";
+//                $url = base_url('Details/' . $location['p_id']);
+//                $span = "<span  class='infocur infocur_first' style='direction: rtl'><span>" . $inforL[$num_l]['priceOfMeter'] . " <span class='infocur' ></span>";
+//                $numOfView = $inforL[$num_l]['priceOfMeter'];
+
+                if ($Post['p_address_ar'] == "" || $Post['p_address_ar'] == null) $Post['p_address_ar'] = "العنوان غير متوفر";
+                if ($Post['p_numOfRooms'] == "") $Post['p_numOfRooms'] = 0;
+                if ($Post['p_areaSpace'] == "") $Post['p_areaSpace'] = 0;
+                if ($Post['por_price'] == "" || $Post['por_price'] == null) {
+                    $Post['por_price'] = 'غير متوفر';
+                }
+                if ($Post['p_numOfBathRooms'] == "") $Post['p_numOfBathRooms'] = 0;
+                if ($Post['p_description_ar'] == null || $Post['p_description_ar'] == "") $Post['p_description_ar'] = "لا يوجد وصف";
+                $image = '<img width="100%" height="70" src="' . urlencode($infor[$numPost]['images'][0]) . '" class="attachment-widget_thumb size-widget_thumb wp-post-image" alt="" srcset="' . urlencode($infor[$numPost]['images'][0]) . ' 105w, ' . urlencode($infor[$numPost]['images'][0]) . ' 300w, ' . urlencode($infor[$numPost]['images'][0]) . ' 768w, ' . urlencode($infor[$numPost]['images'][0]) . ' 1024w" sizes="(max-width: 105px) 100vw, 105px" />';
+                $image = urlencode($image);
+                /*
+                 * 0-title ->address
+                 * 1-location latitude
+                 * 2-location meridian
+                 * 3-counter => small image
+                 * 4-image
+                 * 5-price
+                 * 6-single_first_type
+                 * 7-single_first_action
+                 * 8-pin
+                 * 9-link
+                 * 10-id->id product
+                 * 11-cleanprice
+                 * 12-rooms
+                 * 13-baths
+                 * 14-size
+                 * 15-single_first_type_name
+                 * 16-single_first_action_name
+                 * 17-pin_price
+                 *
+                 * */
+
+                if ($Post['p_latitude'] != "" && $Post['p_latitude'] != null && $Post['p_meridian'] != "" && $Post['p_meridian'] != null) {
+                    $new_maps[] = array(
+                        $Post['p_address_ar'],
+                        $Post['p_latitude'],
+                        $Post['p_meridian'],
+                        6,
+                        $smallImage,
+                        $span,
+                        '',
+                        '',
+                        '',
+                        urlencode($url),
+                        $Post['p_id'],
+                        $Post['por_price'],
+                        $Post['p_numOfRooms'],
+                        $Post['p_numOfBathRooms'],
+                        $Post['p_areaSpace'],
+                        $Post['p_address_en'],
+                        $Post['p_numOfView_f'],
+                        $image
+                    );
+
+                }
+
+                if ($numPost < count($Posts) - 1) {
+                    $maps .= ',';
+                }
+                if (!$photoUnset) {
+                    $numPost++;
+                }
+
+            }
+//            echo '<pre>';
+//            print_r($Posts);
+//            echo '</pre>';
+            $config = array();
+            $config["base_url"] = base_url('search');
+            $config["total_rows"] = $this->Posts->count_all_search();
+            $config["per_page"] = 12;
+            $config["uri_segment"] = 2;
+            $config["use_page_numbers"] = TRUE;
+            $config["full_tag_open"] = '<ul class="pagination">';
+            $config["full_tag_close"] = '</ul>';
+            $config["first_tag_open"] = '<li>';
+            $config["first_tag_close"] = '</li>';
+            $config["last_tag_open"] = '<li>';
+            $config["last_tag_close"] = '</li>';
+            $config['next_link'] = '&gt;';
+            $config["next_tag_open"] = '<li>';
+            $config["next_tag_close"] = '</li>';
+            $config["prev_link"] = "&lt;";
+            $config["prev_tag_open"] = "<li>";
+            $config["prev_tag_close"] = "</li>";
+            $config["cur_tag_open"] = "<li class='active'><a href='#'>";
+            $config["cur_tag_close"] = "</a></li>";
+            $config["num_tag_open"] = "<li>";
+            $config["num_tag_close"] = "</li>";
+            $config["num_links"] = 2;
+            $this->pagination->initialize($config);
+            $page = $this->uri->segment(2);
+            $data['pages'] = $this->pagination->create_links();
+            $maps .= "]";
+            $data['posts'] = $infor;
+            $data['maps'] = '[' . $maps . '';
+            $data['data'] = $this->InitializedPost();
+            $data['OptionMaps'] = $this->Posts->GetOptionMaps();
+            $data['new_maps'] = json_encode($new_maps);
+            $this->load->view('home_new', $data);
+        } else {
+            redirect(base_url());
+        }
+    }
+
+    public function text()
+    {
+        $data = $this->db->get_where('governorates', array('g_active' => 1))->result_array();
+        echo json_encode($data);
+    }
+
+    public function getPin()
+    {
+        $this->load->model('Posts');
+        $objective = null;
+        $governorates = null;
+        $tapu = null;
+        $type = null;
+        $room = null;
+        $bathRoom = null;
+        $cladding = null;
+        if (isset($_POST['val_holder'][1]) && $_POST['val_holder'][1] != "all" && $_POST['val_holder'][1] != null && $_POST['val_holder'][1] != "null") {
+            $objective = $_POST['val_holder'][1];
+        }
+        if (isset($_POST['val_holder'][2]) && $_POST['val_holder'][2] != "all" && $_POST['val_holder'][2] != null && $_POST['val_holder'][2] != "null") {
+            $governorates = $_POST['val_holder'][2];
+        }
+        if (isset($_POST['val_holder'][3]) && $_POST['val_holder'][3] != "all" && $_POST['val_holder'][3] != null && $_POST['val_holder'][3] != "null") {
+            $type = $_POST['val_holder'][3];
+        }
+        if (isset($_POST['val_holder'][4]) && $_POST['val_holder'][4] != "all" && $_POST['val_holder'][4] != null && $_POST['val_holder'][4] != "null") {
+            $room = $_POST['val_holder'][4];
+        }
+        if (isset($_POST['val_holder'][7]) && $_POST['val_holder'][7] != "all" && $_POST['val_holder'][7] != null && $_POST['val_holder'][7] != "null") {
+            $bathRoom = $_POST['val_holder'][7];
+        }
+        if (isset($_POST['val_holder'][8]) && $_POST['val_holder'][8] != "all" && $_POST['val_holder'][8] != null && $_POST['val_holder'][8] != "null") {
+            $tapu = $_POST['val_holder'][8];
+        }
+        if (isset($_POST['val_holder'][6]) && $_POST['val_holder'][6] != "all" && $_POST['val_holder'][6] != null && $_POST['val_holder'][6] != "null") {
+            $cladding = $_POST['val_holder'][6];
+        }
+
+        $data = $this->Posts->search_maps($objective, $governorates, $type, $tapu, $room, $bathRoom, $cladding);
+        $result['args'] = array(
+            'cache_results' => false,
+            'meta_key' => 'prop_featured',
+            'meta_query' => '',
+            'order' => 'DESC',
+            'orderby' => 'meta_value',
+            'page' => 1,
+            'paged' => 0
+        );
+        $result['no_results'] = count($data);
+        $result['xxx'] = '';
+        foreach ($data as $location) {
+            $images = $this->Posts->GetImagesOfPost($location['p_id']);
+
+            if ($images) {
+                foreach ($images as $image) {
+//                            if ($image['pi_main'] == '1'){
+                    $base_image = base_url() . $image['pi_image'];
+//                            }
+                }
+            } else {
+                $base_image = base_url() . 'public/images/no-photo.png';
+
+            }
+            $smallImage = "<img  src='" . urlencode($base_image) . "' style='width: 400px ; height: 161px ; ;' class=attachment-property_map1 size-property_map wp-post-image' alt='' />";
+            $url = base_url('posts/' . $location['p_number']);
+            $span = "<span  class='infocur infocur_first' style='direction: rtl'><span>" . $location['por_price'] . " <span class='infocur' ></span>";
+            $numOfView = $location['por_price'];
+            if ($location['p_address_ar'] == "" || $location['p_address_ar'] == null) $location['p_address_ar'] = "العنوان غير متوفر";
+            if ($location['p_numOfRooms'] == "") $location['p_numOfRooms'] = 0;
+            if ($location['p_areaSpace'] == "") $location['p_areaSpace'] = 0;
+            if ($location['por_price'] == "" || $location['por_price'] == null) {
+                $location['por_price'] = 'غير متوفر';
+            }
+            if ($location['p_numOfBathRooms'] == "") $location['p_numOfBathRooms'] = 0;
+            if ($location['p_description_ar'] == null || $location['p_description_ar'] == "") $location['p_description_ar'] = "لا يوجد وصف";
+            $image = '<img width="100" height="40px" style="hight:40px" src="' . urlencode($base_image) . '" alt="" srcset="' . urlencode($base_image) . ' 105w, ' . urlencode($base_image) . ' 300w, ' . urlencode($base_image) . ' 768w, ' . urlencode($base_image) . ' 1024w" sizes="(max-width: 105px) 100vw, 105px" />';
+//            $image = urlencode($image);
+            $result['markers'][] = array(
+                $location['p_address_ar'],
+                $location['p_latitude'],
+                $location['p_meridian'],
+                2,
+                $smallImage,
+                $span,
+                '',
+                '',
+                '',
+                urlencode($url),
+                $location['p_id'],
+                $location['por_price'],
+                $location['p_numOfRooms'],
+                $location['p_numOfBathRooms'],
+                $location['p_areaSpace'],
+                $location['p_address_en'],
+                $location['p_numOfView_f'],
+                $location['po_name_en'],
+                $image,
+            );
+
+        }
+        echo json_encode($result);
+
+    }
+
+    public function increment($type)
+    {
+
+        if ($type == 1) {
+            $type = 'view';
+        } elseif ($type == 2) {
+            $type = 'google play';
+        } elseif ($type == 3) {
+            $type = 'direct download';
+        } else {
+            return;
+        }
+        $this->db->insert('counter', array('title' => $type, 'date' => time()));
+    }
+
+    public function ajax_search($page = null)
+    {
+        $this->load->model('Posts');
+        if (isset($page)) {
+            $cladding = $_SESSION['search']['cladding'];
+            $tapu = $_SESSION['search']['tapu'];
+            $type = $_SESSION['search']['type'];
+            $room = $_SESSION['search']['room'];
+            $bathRoom = $_SESSION['search']['bathRoom'];
+            $governorates = $_SESSION['search']['governorates'];
+            $objective = $_SESSION['search']['objective'];
+            $Posts = $this->Posts->search_maps($objective, $governorates, $type, $tapu, $room, $bathRoom, $cladding, $page);
+            if (count($Posts) == 0) {
+                $this->load->view('search_404');
+                return;
+            }
+
+        } else {
+
+
+            $objective = null;
+            $governorates = null;
+            $tapu = null;
+            $type = null;
+            $room = null;
+            $bathRoom = null;
+            $cladding = null;
+            $_SESSION['search'] = array(
+                'objective' => $objective,
+                'governorates' => $governorates,
+                'room' => $room,
+                'bathRoom' => $bathRoom,
+                'type' => $type,
+                'tapu' => $tapu,
+                'cladding' => $cladding
+
+            );
+//            objective
+            if (isset($_POST['val_holder'][1]) && $_POST['val_holder'][1] != "all" && $_POST['val_holder'][1] != null && $_POST['val_holder'][1] != "null") {
+                $_objective = $_POST['val_holder'][1];
+                $_SESSION['search']['objective'] = $objective;
+            }
+//           govennorates
+            if (isset($_POST['val_holder'][2]) && $_POST['val_holder'][2] != "all" && $_POST['val_holder'][2] != null && $_POST['val_holder'][2] != "null") {
+                $governorates = $_POST['val_holder'][2];
+                $_SESSION['search']['governorates'] = $governorates;
+            }
+//            type
+            if (isset($_POST['val_holder'][3]) && $_POST['val_holder'][3] != "all" && $_POST['val_holder'][3] != null && $_POST['val_holder'][3] != "null") {
+                $type = $_POST['val_holder'][3];
+                $_SESSION['search']['type'] = $type;
+
+            }
+//            num room
+            if (isset($_POST['val_holder'][4]) && $_POST['val_holder'][4] != "all" && $_POST['val_holder'][4] != null && $_POST['val_holder'][4] != "null") {
+                $room = $_POST['val_holder'][4];
+                $_SESSION['search']['room'] = $room;
+            }
+//            num bath room
+            if (isset($_POST['val_holder'][7]) && $_POST['val_holder'][7] != "all" && $_POST['val_holder'][7] != null && $_POST['val_holder'][7] != "null") {
+                $bathRoom = $_POST['val_holder'][7];
+                $_SESSION['search']['bathRoom'] = $bathRoom;
+
+            }
+//            tapu
+            if (isset($_POST['val_holder'][8]) && $_POST['val_holder'][8] != "all" && $_POST['val_holder'][8] != null && $_POST['val_holder'][8] != "null") {
+                $tapu = $_POST['val_holder'][8];
+                $_SESSION['search']['tapu'] = $tapu;
+
+            }
+//            cladding
+            if (isset($_POST['val_holder'][6]) && $_POST['val_holder'][6] != "all" && $_POST['val_holder'][6] != null && $_POST['val_holder'][6] != "null") {
+                $cladding = $_POST['val_holder'][6];
+                $_SESSION['search']['cladding'] = $cladding;
+            }
+            $Posts = $this->Posts->search_maps($objective, $governorates, $type, $tapu, $room, $bathRoom, $cladding, 1);
+            if (count($Posts) == 0) {
+                $this->load->view('search_404');
+                return;
+            }
+        }
+        $count = $this->Posts->search_maps($objective, $governorates, $type, $tapu, $room, $bathRoom, $cladding, false);
+        $infor = array();
+        $numPost = 0;
+        foreach ($Posts as $Post) {
+
+            $infor[$numPost]['id'] = $Post['p_id'];
+            if ($this->session->userdata('lang')) {
+                $infor[$numPost]['description'] = $Post['p_description_en'];
+                $infor[$numPost]['address'] = $Post['p_address_en'];
+                $infor[$numPost]['typeOfProperty']['id'] = $Post['pp_id'];
+                $infor[$numPost]['typeOfProperty']['name'] = $Post['pp_name_en'];
+                $infor[$numPost]['type']['id'] = $Post['pt_id'];
+                $infor[$numPost]['type']['name'] = $Post['pt_name_en'];
+                $infor[$numPost]['typeOfCladding']['id'] = $Post['pc_id'];
+                $infor[$numPost]['typeOfCladding']['name'] = $Post['pc_name_en'];
+            } else {
+                $infor[$numPost]['description'] = $Post['p_description_ar'];
+                $infor[$numPost]['address'] = $Post['p_address_ar'];
+                $infor[$numPost]['typeOfProperty']['id'] = $Post['pp_id'];
+                $infor[$numPost]['typeOfProperty']['name'] = $Post['pp_name_ar'];
+                $infor[$numPost]['type']['id'] = $Post['pt_id'];
+                $infor[$numPost]['type']['name'] = $Post['pt_name_ar'];
+                $infor[$numPost]['typeOfCladding']['id'] = $Post['pc_id'];
+                $infor[$numPost]['typeOfCladding']['name'] = $Post['pc_name_ar'];
+            }
+
+            $infor[$numPost]['numOfRooms'] = $Post['p_numOfRooms'];
+            $infor[$numPost]['numOfBathRooms'] = $Post['p_numOfBathRooms'];
+            $infor[$numPost]['areaSpace'] = $Post['p_areaSpace'];
+            $infor[$numPost]['meridian'] = $Post['p_meridian'];
+            $infor[$numPost]['latitude'] = $Post['p_latitude'];
+            $infor[$numPost]['dateOfConstruction'] = $Post['p_dateOfConstruction'];
+            $infor[$numPost]['priceOfMeter'] = $Post['por_price'];
+            $infor[$numPost]['floor'] = $Post['p_floor'];
+            $infor[$numPost]['parking'] = $Post['p_parking'] == '1' ? 'true' : 'false';
+            $infor[$numPost]['elevator'] = $Post['p_elevator'] == '1' ? 'true' : 'false';
+            $infor[$numPost]['interphone'] = $Post['p_interphone'] == '1' ? 'true' : 'false';
+            $infor[$numPost]['summer'] = $Post['p_summer'];
+            $infor[$numPost]['winter'] = $Post['p_winter'];
+            $infor[$numPost]['numOfView'] = $Post['p_numOfView_f'];
+            $infor[$numPost]['governorate'] = $Post['g_name_ar'];
+            $infor[$numPost]['ownership'] = $Post['po_name_ar'];
+            $infor[$numPost]['timestamp'] = $this->getDate($Post['p_timestamp']);
+            $infor[$numPost]['active'] = $Post['p_active'];
+            $infor[$numPost]['number'] = $Post['p_number'];
+            $infor[$numPost]['area'] = $Post['area'];
+
+            $images = $this->Posts->GetImagesOfPost($Post['p_id']);
+            $photoUnset = false;
+            if ($images) {
+                foreach ($images as $image) {
+                    //                            if ($image['pi_main'] == '1'){
+                    $infor[$numPost]['images'][] = base_url() . $image['pi_image'];
+                    //                            }
+                }
+            } else {
+                $infor[$numPost]['images'][0] = base_url() . 'public/images/no-photo.png';
+                if (isset($isPhoto) && $isPhoto == '2') {
+                    $photoUnset = true;
+                    unset($infor[$numPost]);
+                }
+            }
+
+            if ($Post['p_address_ar'] == "" || $Post['p_address_ar'] == null) $Post['p_address_ar'] = "العنوان غير متوفر";
+            if ($Post['p_numOfRooms'] == "") $Post['p_numOfRooms'] = 0;
+            if ($Post['p_areaSpace'] == "") $Post['p_areaSpace'] = 0;
+            if ($Post['por_price'] == "" || $Post['por_price'] == null) {
+                $Post['por_price'] = 'غير متوفر';
+            }
+            if ($Post['p_numOfBathRooms'] == "") $Post['p_numOfBathRooms'] = 0;
+            if ($Post['p_description_ar'] == null || $Post['p_description_ar'] == "") $Post['p_description_ar'] = "لا يوجد وصف";
+
+            if (!$photoUnset) {
+                $numPost++;
+            }
+
+        }
+        $config = array();
+        $config["base_url"] = base_url('search');
+        $config["total_rows"] = count($count);
+        $config['use_page_numbers'] = TRUE;
+//        $config['uri_segment'] = $page;
+        $config["per_page"] = 16;
+        $config["uri_segment"] = 2;
+        $config["use_page_numbers"] = TRUE;
+        $config["full_tag_open"] = '<ul class="pagination">';
+        $config["full_tag_close"] = '</ul>';
+        $config["first_tag_open"] = '<li>';
+        $config["first_tag_close"] = '</li>';
+        $config["last_tag_open"] = '<li>';
+        $config["last_tag_close"] = '</li>';
+        $config['next_link'] = '&gt;';
+        $config["next_tag_open"] = '<li>';
+        $config["next_tag_close"] = '</li>';
+        $config["prev_link"] = "&lt;";
+        $config["prev_tag_open"] = "<li>";
+        $config["prev_tag_close"] = "</li>";
+        $config["cur_tag_open"] = "<li class='active'><a href='#'>";
+        $config["cur_tag_close"] = "</a></li>";
+        $config["num_tag_open"] = "<li>";
+        $config["num_tag_close"] = "</li>";
+        $config["num_links"] = 1;
+        $this->pagination->initialize($config);
+        $page = $this->uri->segment(2);
+        $data['pages'] = $this->pagination->create_links();
+        $data['page'] = $page;
+        $data['posts'] = $infor;
+        $this->load->view('ajax_search', $data);
+
+
+    }
+
+    public function profile($gsm = null)
+    {
+        $new_maps = array();
+        if (isset($gsm)) {
+            $this->load->model('Posts');
+            $config = array();
+            $config["base_url"] = base_url('index');
+            $config["total_rows"] = $this->Posts->get_count_gsm_posts($gsm);
+            $config["per_page"] = 16;
+            $config["uri_segment"] = 2;
+            $config["use_page_numbers"] = TRUE;
+            $config["full_tag_open"] = '<ul class="pagination">';
+            $config["full_tag_close"] = '</ul>';
+            $config["first_tag_open"] = '<li>';
+            $config["first_tag_close"] = '</li>';
+            $config["last_tag_open"] = '<li>';
+            $config["last_tag_close"] = '</li>';
+            $config['next_link'] = '&gt;';
+            $config["next_tag_open"] = '<li>';
+            $config["next_tag_close"] = '</li>';
+            $config["prev_link"] = "&lt;";
+            $config["prev_tag_open"] = "<li>";
+            $config["prev_tag_close"] = "</li>";
+            $config["cur_tag_open"] = "<li class='active'><a href='#'>";
+            $config["cur_tag_close"] = "</a></li>";
+            $config["num_tag_open"] = "<li>";
+            $config["num_tag_close"] = "</li>";
+            $config["num_links"] = 2;
+            $this->pagination->initialize($config);
+            $page = $this->uri->segment(2);
+            $data['pages'] = $this->pagination->create_links();
+            $ids = array();
+            $inforL = array();
+            $num_l = 0;
+            $Posts = $this->Posts->get_posts_by_gsm($gsm);
+
+            foreach ($Posts as $location) {
+                if ($location['p_active'] == 1) {
+                    $infor[$num_l]['id'] = $location['p_id'];
+                    if ($this->session->userdata('lang')) {
+                        $inforL[$num_l]['description'] = $location['p_description_en'];
+                        $inforL[$num_l]['address'] = $location['p_address_en'];
+                        $inforL[$num_l]['typeOfProperty']['id'] = $location['pp_id'];
+                        $inforL[$num_l]['typeOfProperty']['name'] = $location['pp_name_en'];
+                        $inforL[$num_l]['type']['id'] = $location['pt_id'];
+                        $inforL[$num_l]['type']['name'] = $location['pt_name_en'];
+                        $inforL[$num_l]['typeOfCladding']['id'] = $location['pc_id'];
+                        $inforL[$num_l]['typeOfCladding']['name'] = $location['pc_name_en'];
+                    } else {
+                        $inforL[$num_l]['description'] = $location['p_description_ar'];
+                        $inforL[$num_l]['address'] = $location['p_address_ar'];
+                        $inforL[$num_l]['typeOfProperty']['id'] = $location['pp_id'];
+                        $inforL[$num_l]['typeOfProperty']['name'] = $location['pp_name_ar'];
+                        $inforL[$num_l]['type']['id'] = $location['pt_id'];
+                        $inforL[$num_l]['type']['name'] = $location['pt_name_ar'];
+                        $inforL[$num_l]['typeOfCladding']['id'] = $location['pc_id'];
+                        $inforL[$num_l]['typeOfCladding']['name'] = $location['pc_name_ar'];
+                    }
+
+                    $inforL[$num_l]['numOfRooms'] = $location['p_numOfRooms'];
+                    $inforL[$num_l]['numOfBathRooms'] = $location['p_numOfBathRooms'];
+                    $inforL[$num_l]['areaSpace'] = $location['p_areaSpace'];
+                    $inforL[$num_l]['meridian'] = $location['p_meridian'];
+                    $inforL[$num_l]['latitude'] = $location['p_latitude'];
+                    $inforL[$num_l]['dateOfConstruction'] = $location['p_dateOfConstruction'];
+                    $inforL[$num_l]['priceOfMeter'] = $location['por_price'];
+                    $inforL[$num_l]['floor'] = $location['p_floor'];
+                    $inforL[$num_l]['parking'] = $location['p_parking'] == '1' ? 'true' : 'false';
+                    $inforL[$num_l]['elevator'] = $location['p_elevator'] == '1' ? 'true' : 'false';
+                    $inforL[$num_l]['interphone'] = $location['p_interphone'] == '1' ? 'true' : 'false';
+                    $inforL[$num_l]['summer'] = $location['p_summer'];
+                    $inforL[$num_l]['winter'] = $location['p_winter'];
+                    $inforL[$num_l]['numOfView'] = $location['p_numOfView_f'];
+                    $inforL[$num_l]['governorate'] = $location['g_name_ar'];
+                    $inforL[$num_l]['ownership'] = $location['po_name_ar'];
+                    $inforL[$num_l]['ownership_id'] = $location['po_id'];
+                    $inforL[$num_l]['number'] = $location['p_number'];
+                    $inforL[$num_l]['timestamp'] = $this->getDate($location['p_timestamp']);
+
+
+                    $images = $this->Posts->GetImagesOfPost($location['p_id']);
+                    $photoUnset = false;
+                    if ($images) {
+                        foreach ($images as $image) {
+//                            if ($image['pi_main'] == '1'){
+                            $inforL[$num_l]['images'][] = base_url() . $image['pi_image'];
+//                            }
+                        }
+                    } else {
+                        $inforL[$num_l]['images'][0] = base_url() . 'public/images/no-photo.png';
+                        if (isset($isPhoto) && $isPhoto == '2') {
+                            $photoUnset = true;
+                            unset($inforL[$num_l]);
+                        }
+                    }
+
+                    $smallImage = "<img  src='" . urlencode($inforL[$num_l]['images'][0]) . "' style='width: 400px ; height: 161px ; ;' class=attachment-property_map1 size-property_map wp-post-image' alt='' />";
+                    $url = base_url('posts/' . $location['p_number']);
+                    if ($location['p_active'] == 4 || $location['p_active'] == 0) $url = "#";
+                    $span = "<span  class='infocur infocur_first' style='direction: rtl'><span>" . $inforL[$num_l]['priceOfMeter'] . " <span class='infocur' ></span>";
+                    $numOfView = $inforL[$num_l]['priceOfMeter'];
+                    if ($location['p_address_ar'] == "" || $location['p_address_ar'] == null) $location['p_address_ar'] = "العنوان غير متوفر";
+                    if ($location['p_numOfRooms'] == "") $location['p_numOfRooms'] = 0;
+                    if ($location['p_areaSpace'] == "") $location['p_areaSpace'] = 0;
+                    if ($location['por_price'] == "" || $location['por_price'] == null) {
+                        $location['por_price'] = 'غير متوفر';
+                    }
+                    if ($location['p_numOfBathRooms'] == "") $location['p_numOfBathRooms'] = 0;
+                    if ($location['p_description_ar'] == null || $location['p_description_ar'] == "") $location['p_description_ar'] = "لا يوجد وصف";
+                    $image = '<img width="100%" height="70" src="' . urlencode($inforL[$num_l]['images'][0]) . '" class="attachment-widget_thumb size-widget_thumb wp-post-image" alt="" srcset="' . urlencode($inforL[$num_l]['images'][0]) . ' 105w, ' . urlencode($inforL[$num_l]['images'][0]) . ' 300w, ' . urlencode($inforL[$num_l]['images'][0]) . ' 768w, ' . urlencode($inforL[$num_l]['images'][0]) . ' 1024w" sizes="(max-width: 105px) 100vw, 105px" />';
+                    $image = urlencode($image);
+                    /*
+                     * 0-title ->address
+                     * 1-location latitude
+                     * 2-location meridian
+                     * 3-counter => small image
+                     * 4-image
+                     * 5-price
+                     * 6-single_first_type
+                     * 7-single_first_action
+                     * 8-pin
+                     * 9-link
+                     * 10-id->id product
+                     * 11-cleanprice
+                     * 12-rooms
+                     * 13-baths
+                     * 14-size
+                     * 15-single_first_type_name
+                     * 16-single_first_action_name
+                     * 17-pin_price
+                     *
+                     * */
+
+
+                    if ($location['p_latitude'] != "" && $location['p_latitude'] != null && $location['p_meridian'] != "" && $location['p_meridian'] != null) {
+                        $new_maps[] = array(
+                            word_limiter($location['p_address_ar'], 5),
+                            $location['p_latitude'],
+                            $location['p_meridian'],
+                            2,
+                            $smallImage,
+                            $span,
+                            '',
+                            '',
+                            '',
+                            urlencode($url),
+                            $location['p_id'],
+                            $location['por_price'],
+                            $location['p_numOfRooms'],
+                            $location['p_numOfBathRooms'],
+                            $location['p_areaSpace'],
+                            word_limiter($location['p_description_ar'], 10),
+                            $location['po_name_en'],
+                            $image
+                        );
+
+                    }
+                    $num_l++;
+                }
+
+            }
+            $infor = array();
+            if ($Posts) {
+                $numPost = 0;
+                foreach ($Posts as $Post) {
+
+                    $infor[$numPost]['id'] = $Post['p_id'];
+                    if ($this->session->userdata('lang')) {
+                        $infor[$numPost]['description'] = $Post['p_description_en'];
+                        $infor[$numPost]['address'] = $Post['p_address_en'];
+                        $infor[$numPost]['typeOfProperty']['id'] = $Post['pp_id'];
+                        $infor[$numPost]['typeOfProperty']['name'] = $Post['pp_name_en'];
+                        $infor[$numPost]['type']['id'] = $Post['pt_id'];
+                        $infor[$numPost]['type']['name'] = $Post['pt_name_en'];
+                        $infor[$numPost]['typeOfCladding']['id'] = $Post['pc_id'];
+                        $infor[$numPost]['typeOfCladding']['name'] = $Post['pc_name_en'];
+                    } else {
+                        $infor[$numPost]['description'] = $Post['p_description_ar'];
+                        $infor[$numPost]['address'] = $Post['p_address_ar'];
+                        $infor[$numPost]['typeOfProperty']['id'] = $Post['pp_id'];
+                        $infor[$numPost]['typeOfProperty']['name'] = $Post['pp_name_ar'];
+                        $infor[$numPost]['type']['id'] = $Post['pt_id'];
+                        $infor[$numPost]['type']['name'] = $Post['pt_name_ar'];
+                        $infor[$numPost]['typeOfCladding']['id'] = $Post['pc_id'];
+                        $infor[$numPost]['typeOfCladding']['name'] = $Post['pc_name_ar'];
+                    }
+                    $infor[$numPost]['numOfRooms'] = $Post['p_numOfRooms'];
+                    $infor[$numPost]['numOfBathRooms'] = $Post['p_numOfBathRooms'];
+                    $infor[$numPost]['areaSpace'] = $Post['p_areaSpace'];
+                    $infor[$numPost]['meridian'] = $Post['p_meridian'];
+                    $infor[$numPost]['latitude'] = $Post['p_latitude'];
+                    $infor[$numPost]['dateOfConstruction'] = $Post['p_dateOfConstruction'];
+                    $infor[$numPost]['priceOfMeter'] = $Post['por_price'];
+                    $infor[$numPost]['floor'] = $Post['p_floor'];
+                    $infor[$numPost]['parking'] = $Post['p_parking'] == '1' ? 'true' : 'false';
+                    $infor[$numPost]['elevator'] = $Post['p_elevator'] == '1' ? 'true' : 'false';
+                    $infor[$numPost]['interphone'] = $Post['p_interphone'] == '1' ? 'true' : 'false';
+                    $infor[$numPost]['summer'] = $Post['p_summer'];
+                    $infor[$numPost]['winter'] = $Post['p_winter'];
+                    $infor[$numPost]['numOfView'] = $Post['p_numOfView_f'];
+                    $infor[$numPost]['governorate'] = $Post['g_name_ar'];
+                    $infor[$numPost]['ownership'] = $Post['po_name_ar'];
+                    $infor[$numPost]['timestamp'] = $this->getDate($Post['p_timestamp']);
+                    $infor[$numPost]['area'] = $Post['area'];
+                    $infor[$numPost]['active'] = $Post['p_active'];
+                    $infor[$numPost]['number'] = $Post['p_number'];
+                    $images = $this->Posts->GetImagesOfPost($Post['p_id']);
+                    $photoUnset = false;
+                    if ($images) {
+                        foreach ($images as $image) {
+//                            if ($image['pi_main'] == '1'){
+                            $infor[$numPost]['images'][] = base_url() . $image['pi_image'];
+//                            }
+                        }
+                    } else {
+                        $infor[$numPost]['images'][0] = base_url() . 'public/images/no-photo.png';
+                        if (isset($isPhoto) && $isPhoto == '2') {
+                            $photoUnset = true;
+                            unset($infor[$numPost]);
+                        }
+                    }
+
+
+                    if (!$photoUnset) {
+                        $numPost++;
+                    }
+
+                }
+
+            } else {
+                $infor = $this->lang->line('NoResult');
+            }
+            $vip = $this->Posts->GetAllPostsWeb(null, null, null, true);
+            $array_vip = array();
+            $num_l = 0;
+            foreach ($vip as $location) {
+                if ($location['p_active'] == 1) {
+                    $array_vip[$num_l]['id'] = $location['p_id'];
+                    if ($this->session->userdata('lang')) {
+                        $array_vip[$num_l]['description'] = $location['p_description_en'];
+                        $array_vip[$num_l]['address'] = $location['p_address_en'];
+                        $array_vip[$num_l]['typeOfProperty']['id'] = $location['pp_id'];
+                        $array_vip[$num_l]['typeOfProperty']['name'] = $location['pp_name_en'];
+                        $array_vip[$num_l]['type']['id'] = $location['pt_id'];
+                        $array_vip[$num_l]['type']['name'] = $location['pt_name_en'];
+                        $array_vip[$num_l]['typeOfCladding']['id'] = $location['pc_id'];
+                        $array_vip[$num_l]['typeOfCladding']['name'] = $location['pc_name_en'];
+                    } else {
+                        $array_vip[$num_l]['description'] = $location['p_description_ar'];
+                        $array_vip[$num_l]['address'] = $location['p_address_ar'];
+                        $array_vip[$num_l]['typeOfProperty']['id'] = $location['pp_id'];
+                        $array_vip[$num_l]['typeOfProperty']['name'] = $location['pp_name_ar'];
+                        $array_vip[$num_l]['type']['id'] = $location['pt_id'];
+                        $array_vip[$num_l]['type']['name'] = $location['pt_name_ar'];
+                        $array_vip[$num_l]['typeOfCladding']['id'] = $location['pc_id'];
+                        $array_vip[$num_l]['typeOfCladding']['name'] = $location['pc_name_ar'];
+                    }
+
+                    $array_vip[$num_l]['numOfRooms'] = $location['p_numOfRooms'];
+                    $array_vip[$num_l]['numOfBathRooms'] = $location['p_numOfBathRooms'];
+                    $array_vip[$num_l]['areaSpace'] = $location['p_areaSpace'];
+                    $array_vip[$num_l]['meridian'] = $location['p_meridian'];
+                    $array_vip[$num_l]['latitude'] = $location['p_latitude'];
+                    $array_vip[$num_l]['dateOfConstruction'] = $location['p_dateOfConstruction'];
+                    $array_vip[$num_l]['priceOfMeter'] = $location['por_price'];
+                    $array_vip[$num_l]['floor'] = $location['p_floor'];
+                    $array_vip[$num_l]['parking'] = $location['p_parking'] == '1' ? 'true' : 'false';
+                    $array_vip[$num_l]['elevator'] = $location['p_elevator'] == '1' ? 'true' : 'false';
+                    $array_vip[$num_l]['interphone'] = $location['p_interphone'] == '1' ? 'true' : 'false';
+                    $array_vip[$num_l]['summer'] = $location['p_summer'];
+                    $array_vip[$num_l]['winter'] = $location['p_winter'];
+                    $array_vip[$num_l]['numOfView'] = $location['p_numOfView_f'];
+                    $array_vip[$num_l]['active'] = $location['p_active'];
+                    $array_vip[$num_l]['area'] = $location['area'];
+                    $array_vip[$num_l]['governorate'] = $location['g_name_ar'];
+                    $array_vip[$num_l]['ownership'] = $location['po_name_ar'];
+                    $array_vip[$num_l]['number'] = $location['p_number'];
+                    $array_vip[$num_l]['ownership_id'] = $location['po_id'];
+                    $array_vip[$num_l]['timestamp'] = $this->getDate($location['p_timestamp']);
+
+
+                    $images = $this->Posts->GetImagesOfPost($location['p_id']);
+                    $photoUnset = false;
+                    if ($images) {
+                        foreach ($images as $image) {
+//                            if ($image['pi_main'] == '1'){
+                            $array_vip[$num_l]['images'][] = base_url() . $image['pi_image'];
+//                            }
+                        }
+                    } else {
+                        $array_vip[$num_l]['images'][0] = base_url() . 'public/images/no-photo.png';
+                        if (isset($isPhoto) && $isPhoto == '2') {
+                            $photoUnset = true;
+                            unset($array_vip[$num_l]);
+                        }
+                    }
+                    $num_l++;
+                }
+
+            }
+
+
+            $data['vip'] = $array_vip;
+            $data['new_maps'] = json_encode($new_maps);
+            $data['posts'] = $infor;
+            $data['profile'] = true;
+            $data['OptionMaps'] = $this->Posts->GetOptionMaps();
+            $data['data'] = $this->InitializedPost();
+            $this->load->view('home_new', $data);
+        } else {
+        }
+    }
+
+    function num_of_view_f()
+    {
+        $data = $this->db->order_by('p_timestamp', ' DESC')->limit(140)->get('posts')->result_array();
+
+        for ($j = 1; $j <= 7; $j++) {
+
+            for ($i = ($j - 1) * 20; $i < $j * 20; $i++) {
+                if ($j == 1) {
+                    $num = rand(1, 10);
+                } else {
+                    $num = rand($j, $j + 4);
+                }
+                $this->db->where('p_id', $data[$i]['p_id'])->set('p_numOfView_f', $data[$i]['p_numOfView_f'] + $num)->update('posts');
+            }
+        }
+
+    }
+
 }
