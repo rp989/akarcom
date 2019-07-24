@@ -24,7 +24,9 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 |
 */
 
-$config['base_url'] = 'http://localhost/realEstate/';
+$config['base_url'] = 'http://localhost/nayotex/akarcom-new/';
+//$config['base_url'] = 'https://www.akarcom.app';
+//$config['base_url'] = 'http://192.168.1.8/nayotex/akarcom-new/';
 
 /*
 |--------------------------------------------------------------------------
@@ -77,7 +79,7 @@ $config['url_suffix'] = '';
 | than english.
 |
 */
-$config['language']	= 'english';
+$config['language']	= 'arabic';
 
 /*
 |--------------------------------------------------------------------------
@@ -325,7 +327,7 @@ $config['cache_query_string'] = FALSE;
 | https://codeigniter.com/user_guide/libraries/encryption.html
 |
 */
-$config['encryption_key'] = '';
+$config['encryption_key'] = '1234561234561234';
 
 /*
 |--------------------------------------------------------------------------

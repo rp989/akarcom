@@ -333,7 +333,7 @@
 <script src="<?php echo base_url(); ?>public/assetsAdmin/js/proudact_add.js"></script>
 <script>
     var map;
-    var markers = [];
+    var markers ;
     function initMap() {
         var myLatLng = {lat: 33.514587, lng: 36.295107};
         map = new google.maps.Map(document.getElementById('map'), {

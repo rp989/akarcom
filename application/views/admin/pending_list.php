@@ -53,10 +53,11 @@ include_once "include/templet/nav.php";
 <script type="text/javascript">
     var table;
     $(document).ready(function () {
-        // "language": {
-        //     "url": "//cdn.datatables.net/plug-ins/1.10.16/i18n/Arabic.json"
-        // },
         table = $('#table').DataTable({
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.10.16/i18n/Arabic.json"
+            },
+
             "responsive": true,
             "processing": true,
             "serverSide": true,

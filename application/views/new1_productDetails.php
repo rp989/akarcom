@@ -11,8 +11,9 @@ if ($type == "F03BA431-43A6-40C7-BD10-4FB9B0995A68" || $type == "CE1E1A5D-E4DA-4
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
     <link rel="pingback" href="<?= base_url(); ?>new_public/xmlrpc.php"/>
-    <link rel="shortcut icon" href="<?= $post1['images'][0] ?>"
+    <link rel="shortcut icon" href="<?= base_url(); ?>/akarkom.svg"
           type="image/x-icon"/>
+    <title>akarcom | عقاركم </title>
     <meta name="description"
           content="
       <?= @$post1['address'] . " " . @$post1['description']; ?>

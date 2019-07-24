@@ -10,7 +10,9 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 class UsersAuth extends CI_Model
 {
-    public function CheckSession($SessionKey){
+
+    public function CheckSession($SessionKey)
+    {
         $this->db->where('us_id', $SessionKey);
         $this->db->order_by('us_timestamp', "desc");
         $this->db->limit(1);
@@ -18,12 +20,13 @@ class UsersAuth extends CI_Model
         return $this->db->get()->result_array();
     }
 
-    public function sendSMS($msg,$gsm){
+    public function sendSMS($msg, $gsm)
+    {
         $password = 'arTak111';
         $user = 'SAY467';
         $from = 'Akarkom';
         $msg = urlencode($msg);
-        $url = 'https://services.mtnsyr.com:7443/General/MTNSERVICES/ConcatenatedSender.aspx?User='.$user.'&Pass='.$password.'&From='.$from.'&Gsm='.$gsm.'&Msg='.$msg.'&Lang=1';
+        $url = 'https://services.mtnsyr.com:7443/General/MTNSERVICES/ConcatenatedSender.aspx?User=' . $user . '&Pass=' . $password . '&From=' . $from . '&Gsm=' . $gsm . '&Msg=' . $msg . '&Lang=1';
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_HEADER, false);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -31,11 +34,11 @@ class UsersAuth extends CI_Model
         curl_close($ch);
     }
 
-    public function createSession($session,$userID,$oldSession,$app_v,$os,$ip,$lang)
+    public function createSession($session, $userID, $oldSession, $app_v, $os, $ip, $lang)
     {
-        if ($lang){
+        if ($lang) {
             $lang = "en";
-        }else{
+        } else {
             $lang = "ar";
         }
         $data = array(
@@ -70,7 +73,7 @@ class UsersAuth extends CI_Model
         return $this->db->get()->result_array();
     }
 
-    public function CheckCode($gsm,$Code)
+    public function CheckCode($gsm, $Code)
     {
         $this->db->where('u_code', $Code);
         $this->db->where('u_gsm', $gsm);
@@ -81,9 +84,9 @@ class UsersAuth extends CI_Model
 //        var_dump($this->db->last_query());exit;
     }
 
-    public function register($id,$name,$GSM,$Password,$active = 1)
+    public function register($id, $name, $GSM, $Password, $active = 1)
     {
-        $code = mt_rand(100, 999) . '-'.mt_rand(100, 999);
+        $code = mt_rand(100, 999) . '-' . mt_rand(100, 999);
         $data = array(
             'u_id' => $id,
             'u_name' => $name,
@@ -94,11 +97,11 @@ class UsersAuth extends CI_Model
             'u_reset' => 0
         );
 //        $code = "000-000";
-        $msg = 'The verification code of Akarcom application is: '.$code .'. The code should not be given to anyone.';
-        $GSM = (int) $GSM;
-        $GSM = (string) $GSM;
-        $GSMNa = '963'.$GSM;
-        $this->sendSMS($msg,$GSMNa);
+        $msg = 'The verification code of Akarcom application is: ' . $code . '. The code should not be given to anyone.';
+        $GSM = (int)$GSM;
+        $GSM = (string)$GSM;
+        $GSMNa = '963' . $GSM;
+        $this->sendSMS($msg, $GSMNa);
         $this->db->insert('users', $data);
 
     }
@@ -111,32 +114,34 @@ class UsersAuth extends CI_Model
         return $this->db->get()->result_array();
     }
 
-    public function VerificationCode($id){
+    public function VerificationCode($id)
+    {
         $this->db->set('u_active', 1);
         $this->db->where('u_id', $id);
         $this->db->update('users');
     }
 
-    public function Forgate($GSM){
+    public function Forgate($GSM)
+    {
         $this->db->where('u_gsm', $GSM);;
         $this->db->from('users');
         return $this->db->get()->result_array();
     }
 
-    public function SetForgateCode($Id,$GSM)
+    public function SetForgateCode($Id, $GSM)
     {
-        $code =  mt_rand(100, 999) . '-'.mt_rand(100, 999);
+        $code = mt_rand(100, 999) . '-' . mt_rand(100, 999);
 //        $code = '000-000';
-        $this->db->set('u_code',$code);
+        $this->db->set('u_code', $code);
         $this->db->set('u_reset', 1);
         $this->db->where('u_id', $Id);
         $this->db->update('users');
 
-        $msg = 'The verification code of Pegasus application is: '.$code .'. The code should not be given to anyone.';
-        $GSM = (int) $GSM;
-        $GSM = (string) $GSM;
-        $GSMNa = '963'.$GSM;
-        $this->sendSMS($msg,$GSMNa);
+        $msg = 'The verification code of Pegasus application is: ' . $code . '. The code should not be given to anyone.';
+        $GSM = (int)$GSM;
+        $GSM = (string)$GSM;
+        $GSMNa = '963' . $GSM;
+        $this->sendSMS($msg, $GSMNa);
     }
 
     public function checkPasswordUser($id, $password)
@@ -147,22 +152,24 @@ class UsersAuth extends CI_Model
         return $this->db->get()->result_array();
     }
 
-    public function ChangePassword($Id,$password){
+    public function ChangePassword($Id, $password)
+    {
         $this->db->set('u_password', $password);
         $this->db->where('u_id', $Id);
         $this->db->update('users');
     }
 
-    public function getProfileUser($ID){
+    public function getProfileUser($ID)
+    {
         $this->db->where('u_id', $ID);
         $this->db->from('users');
         return $this->db->get()->result_array();
     }
 
-    public function updateProfileUser($id,$name,$birthday,$gsm,$active)
+    public function updateProfileUser($id, $name, $birthday, $gsm, $active)
     {
-        if ($active == 0){
-            $this->SetForgateCode($id,$gsm);
+        if ($active == 0) {
+            $this->SetForgateCode($id, $gsm);
             $this->db->set('u_name', $name);
             $this->db->set('u_gsm', $gsm);
             $this->db->set('u_birthday', $birthday);
@@ -170,7 +177,7 @@ class UsersAuth extends CI_Model
             $this->db->set('u_reset', 0);
             $this->db->where('u_id', $id);
             $this->db->update('users');
-        }else{
+        } else {
             $this->db->set('u_name', $name);
             $this->db->set('u_birthday', $birthday);
             $this->db->where('u_id', $id);
@@ -178,17 +185,63 @@ class UsersAuth extends CI_Model
         }
     }
 
-    public function SetToken($session,$token){
+    public function SetToken($session, $token)
+    {
         $this->db->set('us_token', $token);
         $this->db->where('us_id', $session);
         $this->db->update('user_sessions');
     }
 
-    public function addNumber($number){
+    public function addNumber($number)
+    {
         $data = array(
             'number' => $number
         );
         $this->db->insert('test', $data);
+    }
+
+    public function isFound($GSM)
+    {
+        $data = $this->db->get_where('users', array('u_gsm' => $GSM))->result();
+        $data = count($data);
+        if ($data != 0) {
+            return true;
+        }
+        return false;
+    }
+
+    //    login by facebook
+    public function guid()
+    {
+        if (function_exists('com_create_guid') === true) {
+            return trim(com_create_guid(), '{}');
+        }
+        return sprintf('%04X%04X-%04X-%04X-%04X-%04X%04X%04X', mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(16384, 20479), mt_rand(32768, 49151), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535));
+    }
+
+    public function sigin_fb($data)
+    {
+        $user = $this->db->get_where('users', array('u_email' => $data['email'], 'u_fb_id' => $data['id']));
+//        echo json_encode($user);
+        if ($user->num_rows() != 0) {
+//            echo json_encode(['inIf' => 'yes']);
+            $user = $user->result_array();
+        } else {
+//            echo json_encode(['inIf' => 'no']);
+            $new_user['u_name'] = $data['first_name'] . ' ' . $data['last_name'];
+            $new_user['u_email'] = $data['email'];
+            $new_user['u_fb_id'] = $data['id'];
+            $new_user['u_active'] = 1;
+            $new_user['u_id'] = $this->guid();
+            if ($this->db->insert('users', $new_user)) {
+//                $new_id = $this->db->insert_id();
+//                echo json_encode($new_id);
+                $user = $this->db->get_where('users', array('u_id' => $new_user['u_id']))->result_array();
+//                echo json_encode($user);
+            }
+        }
+        return $user;
+
     }
 
 

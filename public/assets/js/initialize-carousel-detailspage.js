@@ -18,9 +18,7 @@
 			$carousel.carouFredSel({
 				responsive: true,
 				items: {
-					visible: 1,
-					width: 800,
-					height: (500/800*100) + 'px'
+					visible: 1
 				},
 				scroll: {
 					fx: 'crossfade',

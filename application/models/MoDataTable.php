@@ -1,5 +1,6 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
+
 class MoDataTable extends CI_Model
 {
     public function __construct()
@@ -8,77 +9,73 @@ class MoDataTable extends CI_Model
         $this->load->database();
     }
 
-    private function _get_datatables_query($table,$column_order,$column_search,$col_where , $where ,$order,$joinTable, $joinCol)
+    private function _get_datatables_query($table, $column_order, $column_search, $col_where, $where, $order, $joinTable, $joinCol)
     {
-        if ($column_order != null){
+        if ($column_order != null) {
             $this->db->select($column_order);
         }
-        if ($col_where != 'not')
-        {
-        	if  (is_array($col_where)) {
-		        foreach ($col_where as $key => $value) {
-		            if (is_array($col_where[$key])){
-                        foreach ($col_where[$key] as $key1 => $value1) {
-                            if ($key1 == 0){
-                                $this->db->where($col_where[$key][$key1] , $where[$key][$key1]);
-                            }else{
-                                $this->db->or_where($col_where[$key][$key1] , $where[$key][$key1]);
-                            }
-                        }
-                    }else{
-                        $this->db->where($col_where[$key] , $where[$key]);
-                    }
-		        }
-	        }else{
-		        $this->db->where($col_where , $where);
-	        }
-        }
-         $this->db->from($table);
-        if ($joinTable != null){
-            if  (is_array($joinTable)) {
+        if ($joinTable != null) {
+            if (is_array($joinTable)) {
                 foreach ($joinTable as $key => $value) {
-                    $this->db->join($joinTable[$key] , $joinCol[$key]);
+                    $this->db->join($joinTable[$key], $joinCol[$key]);
                 }
-            }else{
-                $this->db->join($joinTable,$joinCol);
+            } else {
+                $this->db->join($joinTable, $joinCol);
             }
         }
+        if ($col_where != 'not') {
+            if (is_array($col_where)) {
+                foreach ($col_where as $key => $value) {
+                    if (is_array($col_where[$key])) {
+                        foreach ($col_where[$key] as $key1 => $value1) {
+                            if ($key1 == 0) {
+                                $this->db->where($col_where[$key][$key1], $where[$key][$key1]);
+                            } else {
+                                $this->db->or_where($col_where[$key][$key1], $where[$key][$key1]);
+                            }
+                        }
+                    } else {
+                        $this->db->where($col_where[$key], $where[$key]);
+                    }
+                }
+            } else {
+                $this->db->where($col_where, $where);
+            }
+        }
+        $this->db->from($table);
+
         $i = 0;
         foreach ($column_search as $item) // loop column
         {
-            if(isset($_POST['search']['value'])) // if datatable send POST for search
+            if (isset($_POST['search']['value'])) // if datatable send POST for search
             {
-                if($i===0) // first loop
+                if ($i === 0) // first loop
                 {
                     $this->db->group_start(); // open bracket. query Where with OR clause better with bracket. because maybe can combine with other WHERE with AND.
                     $this->db->like($item, $_POST['search']['value']);
-                }
-                else
-                {
+                } else {
                     $this->db->or_like($item, $_POST['search']['value']);
                 }
-                if(count($column_search) - 1 == $i) {//last loop
-	                $this->db->group_end(); //close bracket
+                if (count($column_search) - 1 == $i) {//last loop
+                    $this->db->group_end(); //close bracket
                 }
-            }else{
-            	break;
+            } else {
+                break;
             }
             $i++;
         }
-        if(isset($_POST['order'])) // here order processing
+        if (isset($_POST['order'])) // here order processing
         {
             $this->db->order_by($column_order[$_POST['order']['0']['column']], $_POST['order']['0']['dir']);
-        }
-        else if(isset($order))
-        {
+        } else if (isset($order)) {
             $this->db->order_by(key($order), $order[key($order)]);
         }
     }
 
-    function get_datatables($table,$column_order,$column_search,$col_where , $where , $order ,$joinTable = null , $joinCol = null)
+    function get_datatables($table, $column_order, $column_search, $col_where, $where, $order, $joinTable = null, $joinCol = null)
     {
-        $this->_get_datatables_query($table,$column_order,$column_search,$col_where , $where ,$order,$joinTable, $joinCol);
-        if(isset($_POST['length']) && $_POST['length'] != -1){
+        $this->_get_datatables_query($table, $column_order, $column_search, $col_where, $where, $order, $joinTable, $joinCol);
+        if (isset($_POST['length']) && $_POST['length'] != -1) {
             $this->db->limit($_POST['length'], $_POST['start']);
         }
         $query = $this->db->get();
@@ -86,45 +83,81 @@ class MoDataTable extends CI_Model
         return $query->result();
     }
 
-    function count_filtered($table,$column_order,$column_search,$col_where,$where,$order,$joinTable = null, $joinCol = null)
+    function count_filtered($table, $column_order, $column_search, $col_where, $where, $order, $joinTable = null, $joinCol = null)
     {
-        $this->_get_datatables_query($table,$column_order,$column_search,$col_where , $where ,$order,$joinTable, $joinCol);
+        $this->_get_datatables_query($table, $column_order, $column_search, $col_where, $where, $order, $joinTable, $joinCol);
         $query = $this->db->get();
         return $query->num_rows();
     }
 
-    public function count_all($table,$col_where , $where,$joinTable = null, $joinCol = null)
+    public function count_all($table, $col_where, $where, $joinTable = null, $joinCol = null)
     {
-        if ($col_where != 'not')
-        {
-            if  (is_array($col_where)) {
+        if ($col_where != 'not') {
+            if (is_array($col_where)) {
                 foreach ($col_where as $key => $value) {
-                    if (is_array($col_where[$key])){
+                    if (is_array($col_where[$key])) {
                         foreach ($col_where[$key] as $key1 => $value1) {
-                            if ($key1 == 0){
-                                $this->db->where($col_where[$key][$key1] , $where[$key][$key1]);
-                            }else{
-                                $this->db->or_where($col_where[$key][$key1] , $where[$key][$key1]);
+                            if ($key1 == 0) {
+                                $this->db->where($col_where[$key][$key1], $where[$key][$key1]);
+                            } else {
+                                $this->db->or_where($col_where[$key][$key1], $where[$key][$key1]);
                             }
                         }
-                    }else{
-                        $this->db->where($col_where[$key] , $where[$key]);
+                    } else {
+                        $this->db->where($col_where[$key], $where[$key]);
                     }
                 }
-            }else{
-                $this->db->where($col_where , $where);
+            } else {
+                $this->db->where($col_where, $where);
             }
         }
         $this->db->from($table);
-        if ($joinTable != null && $joinCol != null){
-            if  (is_array($joinTable)) {
+        if ($joinTable != null && $joinCol != null) {
+            if (is_array($joinTable)) {
                 foreach ($joinTable as $key => $value) {
-                    $this->db->join($joinTable[$key] , $joinCol[$key]);
+                    $this->db->join($joinTable[$key], $joinCol[$key]);
                 }
-            }else{
-                $this->db->join($joinTable,$joinCol);
+            } else {
+                $this->db->join($joinTable, $joinCol);
             }
         }
         return $this->db->count_all_results();
     }
+
+//  --------------------------------------------------------------------------------------------------------------------
+//  25/9/2019
+
+    private function _get_datatables_query_for_query($query, $limit = null, $start = null)
+    {
+
+        if (isset($limit) && !isset($start)) {
+            $query = $query . ' LIMIT ' . $limit;
+        } elseif (isset($limit) && isset($start)) {
+            $query = $query . ' LIMIT ' . $limit . ' OFFSET ' . $start;
+        }
+        $data = $this->db->query($query);
+        return $data;
+    }
+
+    function get_datatables_by_query($query, $limit = null, $start = null)
+    {
+        $data = $this->_get_datatables_query_for_query($query, $limit, $start);
+        $data = $data->result();
+        return $data;
+    }
+
+    function count_filtered_by_query($query, $limit = null, $start = null)
+    {
+        $query = $this->_get_datatables_query_for_query($query, $limit, $start);
+        return $query->num_rows();
+    }
+
+    public
+    function count_all_by_query($query)
+    {
+        $query = $this->db->query($query);
+        return $query->num_rows();
+    }
+
+
 }

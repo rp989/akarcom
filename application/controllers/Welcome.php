@@ -16,9 +16,9 @@ class Welcome extends User
     public function __construct()
     {
         parent::__construct();
-
-        $this->load->library('session');
+//        $this->load->library('');
         $this->lang->load('api', 'arabic');
+
         $this->session->set_userdata('lang', false);
 
         if ($_SERVER['HTTP_HOST'] != 'localhost' && (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === "off" || $_SERVER['HTTP_HOST'] === 'akarcom.app')) {
@@ -921,27 +921,32 @@ class Welcome extends User
         $PostId = $id;
         $this->load->model('Posts');
         $Posts = $this->Posts->GetPost($PostId);
-//        echo '<pre>';
-//        print_r($Posts);
         if (!$this->session->userdata('userId')) {
+
             $actual_link = "http://{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}";
             $this->session->set_userdata('urlEntered', $actual_link);
             $meta = array();
-            $meta[] = '<meta  name="description" content="' . $Posts[0]['p_description_ar'] . ' ' . $Posts[0]['p_address_ar'] . ' ">';
-            $meta[] = '<meta  name="keywords" content="' . $Posts[0]['p_description_ar'] . ' ' . $Posts[0]['p_address_ar'] . ' ">';
-            $meta[] = '<meta name="author" content="Akarcom">';
-            $images = $this->Posts->GetImagesOfPost($Posts[0]['p_id']);
-//            print_r($images);
-            $meta[] = '<meta property="og:image"  content="' . base_url($images[0]['pi_image']) . '">';
-            $meta[] = '<meta property="og:url"  content="' . $actual_link . '">';
-            $meta[] = '<meta property="og:title"  content=" akarcom | عقاركم  ' . $Posts[0]["p_description_ar"] . '">';
-            $meta[] = '<meta property="og:type" content="article" />';
-            $meta[]='<link rel="shortcut icon" href="'.base_url($images[0]['pi_image']) .'"  type="image/x-icon" />';
+            $meta[] = '<meta property="og:title" content="' . $Posts[0]['p_description_ar'] . '">';
+            $meta[] = '<meta property="og:description" content="' . $Posts[0]['p_address_ar'] . '">';
+            $meta[] = '<meta property="og:url"  content="' . base_url('posts/' . $id) . '">';
+            $images = $this->Posts->GetImagesOfPost($Posts[0]['p_id']);//            print_r($images);
+            if (count($images) != 0) {
+                $meta[] = '<meta property="og:image"  content="' . base_url() . "/" . $images[0]['pi_image'] . '">';
+            }
+
+            $meta[] = '<meta name="twitter:card" content="summary_large_image">';
+            $meta[] = '<meta name="viewport" content="width=device-width, initial-scale=1">';
+
+
             $newURL = base_url() . 'SignIn';
             $this->session->set_userdata('meta', $meta);
-            header('Location: ' . $newURL);
-            exit;
-//            return;
+//            $this->render_page('login');
+//            header('Location: ' . $newURL);
+            $this->load->view('admin/include/lang/Ar.php');
+            $this->load->view('new_admin/login');
+
+//            exit;
+            return;
         }
         $new_maps = array();
         if (count($Posts) <= 0) {
@@ -1285,12 +1290,69 @@ class Welcome extends User
 
     public function Signin()
     {
+        $userData = array();
+        if ($this->facebook->is_authenticated()) {
+            $this->load->model('UsersAuth');
+            $userProfile = $this->facebook->request('get', '/me?fields=id,first_name,last_name,email');
+//            print_r($userProfile);
+            $result = $this->UsersAuth->sigin_fb($userProfile);
+            $result = $result[0];
+            $this->session->set_userdata('userId', $result['u_id']);
+            $this->session->set_userdata('name', $result['u_name']);
+            $this->session->set_userdata('session', $this->guid());
+            if ($result['u_active'] == 2)
+                $this->session->set_userdata('admin', true);
+            else
+                $this->session->set_userdata('admin', false);
+
+            if ($this->session->userdata('urlEntered')) {
+                $newURL = $this->session->userdata('urlEntered');
+                $this->session->set_userdata('urlEntered', null);
+                header('Location: ' . $newURL);
+                exit;
+            } else {
+                $newURL = base_url() . 'MemberArea';
+                header('Location: ' . $newURL);
+                exit;
+            }
+
+
+
+
+        } else {
+            $data['authUrl'] = $this->facebook->login_url();
+        }
         if ($this->session->userdata('userId')) {
             $newURL = base_url() . 'MemberArea';
             header('Location: ' . $newURL);
             exit;
         }
         $error = false;
+        if ($this->input->post('name')) {
+            $this->load->model('UsersAuth');
+            $GSM = $this->input->post('name');
+            if (is_numeric($GSM) && strlen((string)$GSM) == 10 && $GSM{0} == 0 && $GSM{1} == 9) {
+
+                $GSM = (int)$GSM;
+
+                $isFound = $this->UsersAuth->isFound($GSM);
+
+                if (!$isFound) {
+                    $this->load->view('admin/include/lang/Ar.php');
+                    $data['GSM'] = $this->input->post('name');
+                    $data['password'] = $this->input->post('pass');
+                    $data['is_False'] = true;
+                    $this->render_page('register', $data);
+                    return;
+                }
+            } else {
+                $this->load->view('admin/include/lang/Ar.php');
+                $this->render_page('register');
+                return;
+            }
+
+
+        }
         if ($this->input->post('name') && $this->input->post('pass')) {
             $GSM = $this->input->post('name');
             $Password = $this->input->post('pass');
@@ -1298,6 +1360,7 @@ class Welcome extends User
                 if (is_numeric($GSM) && strlen((string)$GSM) == 10 && $GSM{0} == 0 && $GSM{1} == 9) {
                     $this->load->model('UsersAuth');
                     $GSM = (int)$GSM;
+
                     $result1 = $this->UsersAuth->login($GSM, $Password);
                     if ($result1) {
                         foreach ($result1 as $result) {
@@ -1356,6 +1419,7 @@ class Welcome extends User
         $this->load->view('admin/include/lang/Ar.php');
 //        $this->load->view('admin/index', $data);
         $this->render_page('login', $data);
+
     }
 
     public function Register()
@@ -1374,8 +1438,10 @@ class Welcome extends User
             if (strlen((string)$Password) >= 8) {
                 if (is_numeric($GSM) && strlen((string)$GSM) == 10 && $GSM{0} == 0 && $GSM{1} == 9) {
                     $this->load->model('UsersAuth');
-                    $GSM = (int)$GSM;
                     $this->UsersAuth->register($this->guid(), $name, $GSM, $Password, $active = 1);
+                    $newURL = base_url() . 'Activation';
+                    header('Location: ' . $newURL);
+                    exit;
                 } else {
                     $error = $this->lang->line('check_your_gsm_number_is_valid');
                 }
@@ -1400,10 +1466,53 @@ class Welcome extends User
 
     public function Activation()
     {
+        if ($this->input->post('gsm') && $this->input->post('code')) {
+            $GSM = $this->input->post('gsm');
+            $code = $this->input->post('code');
+            if (is_numeric($GSM) && strlen((string)$GSM) == 10 && $GSM{0} == 0 && $GSM{1} == 9) {
+                $this->load->model('UsersAuth');
+                $result1 = $this->UsersAuth->CheckCode($GSM, $code);
+                if ($result1) {
+                    foreach ($result1 as $result) {
+                        if ($result['u_active'] == 0) {
+                            $info['userId'] = $result['u_id'];
+                            $this->UsersAuth->VerificationCode($result['u_id']);
+                            $info['userId'] = $result['u_id'];
+                            $info['name'] = $result['u_name'];
+                            $this->session->set_userdata('userId', $result['u_id']);
+                            $this->session->set_userdata('name', $result['u_name']);
+                            $this->session->set_userdata('session', $this->guid());
+                            $this->session->set_userdata('admin', false);
+                            if ($this->session->userdata('urlEntered')) {
+                                $newURL = $this->session->userdata('urlEntered');
+                                $this->session->set_userdata('urlEntered', null);
+                                header('Location: ' . $newURL);
+                                exit;
+                            } else {
+                                $newURL = base_url() . 'MemberArea';
+                                header('Location: ' . $newURL);
+                                exit;
+                            }
+                        } else {
+                            $error = $this->lang->line('your_account_is_already_activation');
+                        }
+                    }
+                } else {
+                    $error = $this->lang->line('not_much_between_gsm_and_code');
+                }
+            } else {
+                $error = $this->lang->line('check_your_gsm_number_is_valid');
+            }
+        }
 //        $this->load->view('admin/include/templet/notification.php');
         $this->load->view('admin/include/lang/Ar.php');
 //        $this->load->view('admin/activation');
-        $this->render_page('activation');
+        $data = '';
+        if (isset($error)) {
+
+            $data['error'] = $error;
+        }
+        $this->render_page('activation', $data);
     }
 
     public function CodeActivation()
@@ -18530,5 +18639,6 @@ class Welcome extends User
         }
 
     }
+
 
 }

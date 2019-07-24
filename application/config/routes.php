@@ -51,9 +51,16 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 */
 
 $route['default_controller'] = 'Welcome';
+$route['index'] ='welcome';
+$route['index/(:num)'] ='welcome/index/$1';
+//$route['search/(:num)'] ='welcome/newSearch/$1';
+//$route['search'] ='welcome/newSearch';
+$route['search'] = 'welcome/ajax_search';
+$route['search/(:num)'] = 'welcome/ajax_search/$1';
 $route['addPost'] = 'MemberArea/addProduct';
 $route['Posts'] = 'MemberArea/Posts';
 $route['PostsData'] = 'MemberArea/PostsData';
+$route['PostsData/(:any)'] = 'MemberArea/PostsData/$1';
 $route['LogOut'] = 'MemberArea/LogOut';
 $route['SignIn'] = 'Welcome/Signin';
 $route['AllPosts'] = 'Welcome/AllPosts';
@@ -62,6 +69,11 @@ $route['CodeActivation'] = 'Welcome/CodeActivation';
 $route['Forgot'] = 'Welcome/Forgot';
 $route['Register'] = 'Welcome/Register';
 $route['Details/(:any)'] = 'Welcome/productDetails/$1';
+$route['posts/(:any)'] = 'Welcome/productDetails/$1';
+$route['post/(:any)'] = 'Welcome/productDetails/$1';
 $route['singleBlog'] = 'Welcome/singleBlog/$1';
+$route['get-pin'] = 'Welcome/getPin';
+$route['profile'] = 'Welcome/profile';
+$route['profile/(:any)'] = 'Welcome/profile/$1';
 $route['404_override'] = '';
 $route['translate_uri_dashes'] = FALSE;

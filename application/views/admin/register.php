@@ -39,7 +39,7 @@
                 </div>
                 <div class="wrap-input100 validate-input m-b-23" data-validate = "<?php echo _EnterPhoneNumber?>">
                     <span class="label-input100"><?php echo _phoneNumber ?></span>
-                    <input class="input100" type="text" name="gsm" id="username" placeholder="<?php echo _phoneNumber ?>">
+                    <input class="input100" type="text" name="name" id="username" placeholder="<?php echo _phoneNumber ?>">
                     <span class="focus-input100" data-symbol="&#xf206;"></span>
                 </div>
                 <div class="wrap-input100 validate-input" data-validate="<?php echo _enterPass?>">

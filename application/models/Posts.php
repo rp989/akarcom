@@ -35,7 +35,7 @@ class Posts extends CI_Model
     {
         if ($filter) {
             if (isset($filter['types'])) {
-                if (is_array($filter['types']) && (sizeof($filter['types']) > 0 )){
+                if (is_array($filter['types']) && (sizeof($filter['types']) > 0)) {
                     $this->db->group_start();
                     foreach ($filter['types'] as $key => $value) {
 //                        if ($value == 1) {
@@ -176,12 +176,12 @@ class Posts extends CI_Model
         return $this->db->get()->result_array();
     }
 
-    public function GetAllPostsWeb($filter = null)
+    public function GetAllPostsWeb($filter = null, $page = null, $search = null, $vip = null)
     {
 //        var_dump($filter);exit;
         if ($filter) {
             if (isset($filter['cladding'])) {
-                    $this->db->group_start();
+                $this->db->group_start();
                 foreach ($filter['cladding'] as $key => $value) {
                     if ($key == 0) {
                         $this->db->where('p.p_typeOfCladding', $value);
@@ -189,7 +189,7 @@ class Posts extends CI_Model
                         $this->db->or_where('p.p_typeOfCladding', $value);
                     }
                 }
-                    $this->db->group_end();
+                $this->db->group_end();
             }
             if (isset($filter['tapu'])) {
                 foreach ($filter['tapu'] as $key => $value) {
@@ -221,11 +221,11 @@ class Posts extends CI_Model
             if (isset($filter['price-start']) && isset($filter['price-end'])) {
                 $this->db->group_start();
                 if ($filter['price-start'] != '∞') {
-                    $this->db->where('por_price >', '%'.$filter['price-start'] .'%');
+                    $this->db->where('por_price >', '%' . $filter['price-start'] . '%');
                 }
                 if ($filter['price-end'] != '') {
                     if ($filter['price-end'] != '∞') {
-                        $this->db->where('por_price < %', '%'.$filter['price-end'] .'%');
+                        $this->db->where('por_price < %', '%' . $filter['price-end'] . '%');
                     }
                 }
                 $this->db->group_end();
@@ -238,6 +238,11 @@ class Posts extends CI_Model
             }
         }
         $this->db->where('p_active !=', 4);
+        $this->db->where('p_active !=', 0);
+        $this->db->where('p_active !=', 2);
+        if (isset($vip) && $vip == true) {
+            $this->db->where('p_vip', '1');
+        }
         $this->db->from('posts p');
         $this->db->join('posts_properties pp', 'pp.pp_id = p.p_typeOfProperty');
         $this->db->join('posts_types pt', 'pt.pt_id = p.p_type');
@@ -247,20 +252,27 @@ class Posts extends CI_Model
         $this->db->join('posts_ownership_relation por', 'por.por_post_id = p.p_id');
         $this->db->join('posts_ownership po', 'po.po_id = por.por_ownership_id');
         $this->db->join('users u', 'u.u_id = p.p_user_id');
-        $this->db->order_by('p.p_timestamp','DESC');
-        if (!$this->session->userdata('all')) {
-            $this->db->limit(9);
+        $this->db->order_by('p.p_timestamp', 'DESC');
+        if (!$this->session->userdata('all') && (!isset($search) || $search == false)) {
+            $this->db->limit(16);
+        }
+        if (isset($page) && (!isset($search) || $search == false)) {
+            $this->db->limit(16, 16 * ($page - 1));
         }
         return $this->db->get()->result_array();
-//      $this->db->get()->result_array();
-//      var_dump($this->db->last_query());exit;
+
     }
 
-
-    public function Get3Posts($governorateId)
+    public function Get3Posts($governorateId, $latitude, $meridian)
     {
+        $this->db->select(' *,( 3959 * acos( cos( radians(' . $latitude . ') ) * cos( radians( `p_latitude`) ) * 
+                          cos( radians( `p_meridian` ) - radians(' . $meridian . ') ) + sin( radians(' . $latitude . ') ) * 
+                          sin( radians(  `p_latitude` ) ) ) ) AS distance ');
         $this->db->where('p_active !=', 4);
-        $this->db->where('p_governorate_id', $governorateId);
+        $this->db->where('p_active !=', 0);
+        $this->db->where('p_latitude != ', $latitude);
+        $this->db->where(' p_meridian != ', $meridian);
+        $this->db->having(' distance < 25');
         $this->db->from('posts p');
         $this->db->join('posts_properties pp', 'pp.pp_id = p.p_typeOfProperty');
         $this->db->join('posts_types pt', 'pt.pt_id = p.p_type');
@@ -270,13 +282,18 @@ class Posts extends CI_Model
         $this->db->join('posts_ownership_relation por', 'por.por_post_id = p.p_id');
         $this->db->join('posts_ownership po', 'po.po_id = por.por_ownership_id');
         $this->db->join('users u', 'u.u_id = p.p_user_id');
-        $this->db->limit(3);
+        $this->db->order_by('distance', 'ASC');
+        $this->db->limit(4);
         return $this->db->get()->result_array();
+//        var_dump($this->db->last_query());
+//        exit;
     }
 
     public function GetPostByUser($userId)
     {
+
         $this->db->where('p_active !=', 4);
+//        $this->db->where('p_active !=', 4);
         $this->db->where('p_user_id', $userId);
         $this->db->from('posts p');
         $this->db->join('posts_properties pp', 'pp.pp_id = p.p_typeOfProperty');
@@ -293,6 +310,29 @@ class Posts extends CI_Model
     public function GetPost($postId)
     {
         $this->changeCountOfVisit($postId);
+//        $this->db->where('p_active !=', 4);
+        $this->db->where('p_active !=', 4);
+        if (strlen($postId) > 33) {
+            $this->db->where('p_id', $postId);
+
+        } else
+            $this->db->where('p_number', $postId);
+        $this->db->from('posts p');
+        $this->db->join('posts_properties pp', 'pp.pp_id = p.p_typeOfProperty');
+        $this->db->join('posts_types pt', 'pt.pt_id = p.p_type');
+        $this->db->join('posts_cladding pc', 'pc.pc_id = p.p_typeOfCladding');
+        $this->db->join('posts_tapu pta', 'pta.pta_id = p.p_prepareOfTapu');
+        $this->db->join('posts_ownership_relation por', 'por.por_post_id = p.p_id');
+        $this->db->join('posts_ownership po', 'po.po_id = por.por_ownership_id');
+        $this->db->join('governorates g', 'g.g_id = p.p_governorate_id');
+        $this->db->join('users u', 'u.u_id = p.p_user_id');
+        return $this->db->get()->result_array();
+    }
+
+    public function GetPost_admin($postId)
+    {
+        $this->changeCountOfVisit($postId);
+//        $this->db->where('p_active !=', 4);
         $this->db->where('p_active !=', 4);
         $this->db->where('p_id', $postId);
         $this->db->from('posts p');
@@ -307,20 +347,23 @@ class Posts extends CI_Model
         return $this->db->get()->result_array();
     }
 
-
     public function changeCountOfVisit($postId)
     {
         $this->db->where('p_id', $postId);
         $this->db->from('posts');
         $result = $this->db->get()->result_array();
         $count = 0;
-        if ($result){
-            foreach ($result as $item){
+        $count_f = 0;
+
+        if ($result) {
+            foreach ($result as $item) {
                 $count = $item['p_numOfView'];
+                $count_f = $item['p_numOfView_f'];
             }
         }
-        $count = (int) $count + 1;
+        $count = (int)$count + 1;
         $this->db->set('p_numOfView', $count);
+        $this->db->set('p_numOfView_f', $count_f);
         $this->db->where('p_id', $postId);
         $this->db->update('posts');
     }
@@ -510,7 +553,7 @@ class Posts extends CI_Model
     public function SetPost($session, $periodTime, $idOwnership, $idOwnershipRelation, $id, $typeId, $description_en, $description_ar, $address_en, $address_ar, $numOfRooms,
                             $numOfBathRooms, $areaSpace, $meridian, $latitude, $typeOfPropertyId,
                             $dateOfConstruction, $parking, $priceOfMeter, $floor, $elevator, $typeOfCladdingId,
-                            $prepareOfFurnished, $interphone, $summer, $winter, $user_id, $governorate_id, $tapu, $active, $GSM = null, $Name = null)
+                            $prepareOfFurnished, $interphone, $summer, $winter, $user_id, $governorate_id, $tapu, $active, $GSM = null, $Name = null, $area = null)
     {
         $data = array(
             'p_id' => $id,
@@ -541,10 +584,11 @@ class Posts extends CI_Model
             'p_active' => $active,
             'p_gsm' => $GSM,
             'p_userInfo' => $Name,
-            'p_timestamp' => time()
+            'p_timestamp' => time(),
+            'area' => $area
         );
         $this->db->insert('posts', $data);
-
+//        echo  $this->db->last_query();
         $this->SetOwnershipRelation($session, $idOwnershipRelation, $idOwnership, $id, $priceOfMeter, $periodTime);
     }
 
@@ -648,10 +692,630 @@ class Posts extends CI_Model
     public function GetImagesOfPost($post_id)
     {
         $this->db->where('pi_post_id', $post_id);
+        $this->db->where('pi_delete', 0);
         $this->db->from('posts_images');
         $this->db->order_by('pi_main', 'DESC');
         return $this->db->get()->result_array();
 //        $this->db->get()->result_array();
 //        var_dump($this->db->last_query());exit;
     }
+
+    function count_all($filter = null)
+    {
+        if ($filter) {
+            if (isset($filter['cladding'])) {
+                $this->db->group_start();
+                foreach ($filter['cladding'] as $key => $value) {
+                    if ($key == 0) {
+                        $this->db->where('p.p_typeOfCladding', $value);
+                    } else {
+                        $this->db->or_where('p.p_typeOfCladding', $value);
+                    }
+                }
+                $this->db->group_end();
+            }
+            if (isset($filter['tapu'])) {
+                foreach ($filter['tapu'] as $key => $value) {
+                    $this->db->group_start();
+                    if ($key == 0) {
+                        $this->db->where('p.p_prepareOfTapu', $value);
+                    } else {
+                        $this->db->or_where('p.p_prepareOfTapu', $value);
+                    }
+                    $this->db->group_end();
+                }
+            }
+            if (isset($filter['type'])) {
+                $this->db->group_start();
+                foreach ($filter['type'] as $key => $value) {
+                    if ($key == 0) {
+                        $this->db->where('p.p_type', $value);
+                    } else {
+                        $this->db->or_where('p.p_type', $value);
+                    }
+                }
+                $this->db->group_end();
+            }
+            if (isset($filter['ownership'])) {
+                $this->db->group_start();
+                $this->db->where('po.po_id', $filter['ownership']);
+                $this->db->group_end();
+            }
+            if (isset($filter['price-start']) && isset($filter['price-end'])) {
+                $this->db->group_start();
+                if ($filter['price-start'] != '∞') {
+                    $this->db->where('por_price >', '%' . $filter['price-start'] . '%');
+                }
+                if ($filter['price-end'] != '') {
+                    if ($filter['price-end'] != '∞') {
+                        $this->db->where('por_price < %', '%' . $filter['price-end'] . '%');
+                    }
+                }
+                $this->db->group_end();
+            }
+            if (isset($filter['governorates']) && !empty($filter['governorates'])) {
+//                var_dump($filter['governorates']);exit;
+                $this->db->group_start();
+                $this->db->where('p.p_governorate_id', (string)$filter['governorates']);
+                $this->db->group_end();
+            }
+        }
+        $this->db->where('p_active ', 1);
+        $this->db->from('posts p');
+        $this->db->join('posts_properties pp', 'pp.pp_id = p.p_typeOfProperty');
+        $this->db->join('posts_types pt', 'pt.pt_id = p.p_type');
+        $this->db->join('governorates g', 'g.g_id = p.p_governorate_id');
+        $this->db->join('posts_cladding pc', 'pc.pc_id = p.p_typeOfCladding');
+        $this->db->join('posts_tapu pta', 'pta.pta_id = p.p_prepareOfTapu');
+        $this->db->join('posts_ownership_relation por', 'por.por_post_id = p.p_id');
+        $this->db->join('posts_ownership po', 'po.po_id = por.por_ownership_id');
+        $this->db->join('users u', 'u.u_id = p.p_user_id');
+        $this->db->order_by('p.p_timestamp', 'DESC');
+
+        return $this->db->get()->num_rows();
+
+//        $this->db->where('p_active !=', 4);
+//        $data = $this->db->get('posts')->num_rows();
+//        return $data;
+    }
+
+    function getAllLocations($filter = null, $page = null)
+    {
+        if ($filter) {
+            if (isset($filter['cladding'])) {
+                $this->db->group_start();
+                foreach ($filter['cladding'] as $key => $value) {
+                    if ($key == 0) {
+                        $this->db->where('p.p_typeOfCladding', $value);
+                    } else {
+                        $this->db->or_where('p.p_typeOfCladding', $value);
+                    }
+                }
+                $this->db->group_end();
+            }
+            if (isset($filter['tapu'])) {
+                foreach ($filter['tapu'] as $key => $value) {
+                    $this->db->group_start();
+                    if ($key == 0) {
+                        $this->db->where('p.p_prepareOfTapu', $value);
+                    } else {
+                        $this->db->or_where('p.p_prepareOfTapu', $value);
+                    }
+                    $this->db->group_end();
+                }
+            }
+            if (isset($filter['type'])) {
+                $this->db->group_start();
+                foreach ($filter['type'] as $key => $value) {
+                    if ($key == 0) {
+                        $this->db->where('p.p_type', $value);
+                    } else {
+                        $this->db->or_where('p.p_type', $value);
+                    }
+                }
+                $this->db->group_end();
+            }
+            if (isset($filter['ownership'])) {
+                $this->db->group_start();
+                $this->db->where('po.po_id', $filter['ownership']);
+                $this->db->group_end();
+            }
+            if (isset($filter['price-start']) && isset($filter['price-end'])) {
+                $this->db->group_start();
+                if ($filter['price-start'] != '∞') {
+                    $this->db->where('por_price >', '%' . $filter['price-start'] . '%');
+                }
+                if ($filter['price-end'] != '') {
+                    if ($filter['price-end'] != '∞') {
+                        $this->db->where('por_price < %', '%' . $filter['price-end'] . '%');
+                    }
+                }
+                $this->db->group_end();
+            }
+            if (isset($filter['governorates']) && !empty($filter['governorates'])) {
+//                var_dump($filter['governorates']);exit;
+                $this->db->group_start();
+                $this->db->where('p.p_governorate_id', (string)$filter['governorates']);
+                $this->db->group_end();
+            }
+        }
+        $this->db->where('p_active ', 1);
+        $this->db->from('posts p');
+        $this->db->join('posts_properties pp', 'pp.pp_id = p.p_typeOfProperty');
+        $this->db->join('posts_types pt', 'pt.pt_id = p.p_type');
+        $this->db->join('governorates g', 'g.g_id = p.p_governorate_id');
+        $this->db->join('posts_cladding pc', 'pc.pc_id = p.p_typeOfCladding');
+        $this->db->join('posts_tapu pta', 'pta.pta_id = p.p_prepareOfTapu');
+        $this->db->join('posts_ownership_relation por', 'por.por_post_id = p.p_id');
+        $this->db->join('posts_ownership po', 'po.po_id = por.por_ownership_id');
+        $this->db->join('users u', 'u.u_id = p.p_user_id');
+        $this->db->order_by('p.p_timestamp', 'DESC');
+//        if (!$this->session->userdata('all')) {
+//            $this->db->limit(12);
+//        }
+//        if (isset($page)) {
+//            $this->db->limit(12, 12 * ($page - 1));
+//        }
+        return $this->db->get()->result_array();
+
+
+    }
+
+    function topPrice()
+    {
+        $this->db->where('p_active ', 1);
+        $this->db->from('posts p');
+        $this->db->join('posts_ownership_relation por', 'por.por_post_id = p.p_id');
+        $data = $this->db->select_max('por_price')->get()->result();
+
+        $data = $data[0]->por_price;
+
+        return $data;
+    }
+
+    function downPrice()
+    {
+        $this->db->where('p_active ', 1);
+        $this->db->from('posts p');
+        $this->db->join('posts_ownership_relation por', 'por.por_post_id = p.p_id');
+        $data = $this->db->select_min('por_price')->get()->result();
+        print_r($data);
+        $data = $data[0]->por_price;
+        return $data;
+    }
+
+    function GetOwnershipPost($id)
+    {
+        $data = $this->db->from('posts_ownership,posts_ownership_relation')->where('posts_ownership.po_id=posts_ownership_relation.por_ownership_id')->where('posts_ownership_relation.por_post_id', $id)->get()->result_array();
+        return $data;
+    }
+
+    function new_search($para = null)
+    {
+        $filter = $_SESSION['search'];
+        if (isset($filter['cladding'])) {
+            $this->db->group_start();
+            foreach ($filter['cladding'] as $key => $value) {
+                if ($key == 0) {
+                    $this->db->where('p.p_typeOfCladding', $value);
+                } else {
+                    $this->db->or_where('p.p_typeOfCladding', $value);
+                }
+            }
+            $this->db->group_end();
+        }
+        if (isset($filter['tapu'])) {
+            foreach ($filter['tapu'] as $key => $value) {
+                $this->db->group_start();
+                if ($key == 0) {
+                    $this->db->where('p.p_prepareOfTapu', $value);
+                } else {
+                    $this->db->or_where('p.p_prepareOfTapu', $value);
+                }
+                $this->db->group_end();
+            }
+        }
+        if (isset($filter['type'])) {
+            $this->db->group_start();
+            foreach ($filter['type'] as $key => $value) {
+                if ($key == 0) {
+                    $this->db->where('p.p_type', $value);
+                } else {
+                    $this->db->or_where('p.p_type', $value);
+                }
+            }
+            $this->db->group_end();
+        }
+        if (isset($filter['ownership'])) {
+            $this->db->group_start();
+            $this->db->where('po.po_id', $filter['ownership']);
+            $this->db->group_end();
+        }
+        if (isset($filter['price-start']) && isset($filter['price-end'])) {
+            $this->db->group_start();
+            if ($filter['price-start'] != '∞') {
+                $this->db->where('por_price >', '%' . $filter['price-start'] . '%');
+            }
+            if ($filter['price-end'] != '') {
+                if ($filter['price-end'] != '∞') {
+                    $this->db->where('por_price < %', '%' . $filter['price-end'] . '%');
+                }
+            }
+            $this->db->group_end();
+        }
+        if (isset($filter['governorates']) && !empty($filter['governorates'])) {
+//                var_dump($filter['governorates']);exit;
+            $this->db->group_start();
+            $this->db->where('p.p_governorate_id', (string)$filter['governorates']);
+            $this->db->group_end();
+        }
+        $this->db->where('p_active !=', 4);
+        $this->db->from('posts p');
+        $this->db->join('posts_properties pp', 'pp.pp_id = p.p_typeOfProperty');
+        $this->db->join('posts_types pt', 'pt.pt_id = p.p_type');
+        $this->db->join('governorates g', 'g.g_id = p.p_governorate_id');
+        $this->db->join('posts_cladding pc', 'pc.pc_id = p.p_typeOfCladding');
+        $this->db->join('posts_tapu pta', 'pta.pta_id = p.p_prepareOfTapu');
+        $this->db->join('posts_ownership_relation por', 'por.por_post_id = p.p_id');
+        $this->db->join('posts_ownership po', 'po.po_id = por.por_ownership_id');
+        $this->db->join('users u', 'u.u_id = p.p_user_id');
+        $this->db->order_by('p.p_timestamp', 'DESC');
+        if (isset($para)) {
+            $this->db->limit(12, 12 * ($para - 1));
+        } else {
+            $this->db->limit(12);
+        }
+        return $this->db->get()->result_array();
+    }
+
+    function count_all_search()
+    {
+        $filter = $_SESSION['search'];
+        if (isset($filter['cladding'])) {
+            $this->db->group_start();
+            foreach ($filter['cladding'] as $key => $value) {
+                if ($key == 0) {
+                    $this->db->where('p.p_typeOfCladding', $value);
+                } else {
+                    $this->db->or_where('p.p_typeOfCladding', $value);
+                }
+            }
+            $this->db->group_end();
+        }
+        if (isset($filter['tapu'])) {
+            foreach ($filter['tapu'] as $key => $value) {
+                $this->db->group_start();
+                if ($key == 0) {
+                    $this->db->where('p.p_prepareOfTapu', $value);
+                } else {
+                    $this->db->or_where('p.p_prepareOfTapu', $value);
+                }
+                $this->db->group_end();
+            }
+        }
+        if (isset($filter['type'])) {
+            $this->db->group_start();
+            foreach ($filter['type'] as $key => $value) {
+                if ($key == 0) {
+                    $this->db->where('p.p_type', $value);
+                } else {
+                    $this->db->or_where('p.p_type', $value);
+                }
+            }
+            $this->db->group_end();
+        }
+        if (isset($filter['ownership'])) {
+            $this->db->group_start();
+            $this->db->where('po.po_id', $filter['ownership']);
+            $this->db->group_end();
+        }
+        if (isset($filter['price-start']) && isset($filter['price-end'])) {
+            $this->db->group_start();
+            if ($filter['price-start'] != '∞') {
+                $this->db->where('por_price >', '%' . $filter['price-start'] . '%');
+            }
+            if ($filter['price-end'] != '') {
+                if ($filter['price-end'] != '∞') {
+                    $this->db->where('por_price < %', '%' . $filter['price-end'] . '%');
+                }
+            }
+            $this->db->group_end();
+        }
+        if (isset($filter['governorates']) && !empty($filter['governorates'])) {
+//                var_dump($filter['governorates']);exit;
+            $this->db->group_start();
+            $this->db->where('p.p_governorate_id', (string)$filter['governorates']);
+            $this->db->group_end();
+        }
+        $this->db->where('p_active !=', 4);
+        $this->db->from('posts p');
+        $this->db->join('posts_properties pp', 'pp.pp_id = p.p_typeOfProperty');
+        $this->db->join('posts_types pt', 'pt.pt_id = p.p_type');
+        $this->db->join('governorates g', 'g.g_id = p.p_governorate_id');
+        $this->db->join('posts_cladding pc', 'pc.pc_id = p.p_typeOfCladding');
+        $this->db->join('posts_tapu pta', 'pta.pta_id = p.p_prepareOfTapu');
+        $this->db->join('posts_ownership_relation por', 'por.por_post_id = p.p_id');
+        $this->db->join('posts_ownership po', 'po.po_id = por.por_ownership_id');
+        $this->db->join('users u', 'u.u_id = p.p_user_id');
+        $this->db->order_by('p.p_timestamp', 'DESC');
+        return $this->db->get()->num_rows();
+
+    }
+
+    function get_data_user($id)
+    {
+        $data = $this->db->select('u_active as active,u_max_product ')->where('u_id', $id)->from('users')->get()->result();
+        return $data;
+    }
+
+    function set_data_user($data, $id)
+    {
+        $this->db->where('u_id', $id)->update('users', $data);
+    }
+
+    function check_user()
+    {
+
+        if ($_SESSION['admin'] == 1) {
+            return true;
+        }
+        $userId = $_SESSION['userId'];
+        $data = $this->db->select('u_max_product')->from('users')->where('u_id', $userId)->limit(1)->get()->row();
+        $data = $data->u_max_product;
+        $posts = $this->db->select('count(p_id) as count_my')->from('posts')->where('p_user_id', $userId)->get()->row();
+        $posts = $posts->count_my;
+
+        if ($data == null) {
+            return true;
+        } else if ($data > $posts) {
+            return true;
+        }
+        return false;
+
+    }
+
+    function change_state_post($id, $state, $vip = null)
+    {
+        if (!isset($vip))
+            $this->db->where('p_id', $id)->set('p_active', $state)->update('posts');
+        else
+            $this->db->where('p_id', $id)->set('p_vip', $state)->update('posts');
+    }
+
+    function update_post($id, $data)
+    {
+        $this->db->where('p_id', $id)->update('posts', $data);
+    }
+
+    function drop_image($post_id)
+    {
+
+        echo $post_id;
+//        $this->db->where('pi_post_id', $post_id)->where('pi_main', 1)->update('posts_images', array('pi_delete', 1));
+    }
+
+    function drop_main_image($post_id)
+    {
+        echo $post_id;
+//        $this->db->where('pi_post_id', $post_id)->where('pi_main', 1)->update('posts_images', array('pi_delete', 1));
+    }
+
+    private function get_governorates_with_count_posts()
+    {
+
+        $this->db->select("governorates.g_id as id  ,governorates.g_name_ar as name  , COUNT(posts.p_id) as countPosts ");
+        $this->db->from("governorates");
+        $this->db->join('posts', 'governorates.g_id = posts.p_governorate_id');
+        $this->db->where('posts.p_active!=4');
+        $this->db->where('posts.p_active!=0');
+        $this->db->group_by("posts.p_governorate_id");
+        $data = $this->db->get();
+        $data = $data->result_array();
+        return $data;
+    }
+
+    private function get_objective_whith_coint_posts()
+    {
+        $this->db->select("posts_ownership.po_id as id ,posts_ownership.po_name_ar as pt_name_ar,COUNT(posts_ownership_relation.por_post_id) as countPosts");
+        $this->db->from('posts_ownership_relation');
+        $this->db->join('posts_ownership', 'posts_ownership.po_id =posts_ownership_relation.por_ownership_id');
+        $this->db->join('posts', 'posts.p_id = posts_ownership_relation.por_post_id');
+        $this->db->where('posts.p_active!=4');
+        $this->db->where('posts.p_active!=0');
+        $this->db->group_by('posts_ownership_relation.por_ownership_id , posts_ownership.po_id');
+
+        $data = $this->db->get();
+        $data = $data->result_array();
+        return $data;
+    }
+
+    private function get_type_with_count_posts()
+    {
+        $this->db->select("posts_types.pt_id as id , posts_types.pt_name_ar as name ,COUNT(posts.p_id) as countPosts");
+        $this->db->from('posts_types');
+        $this->db->join('posts ', 'posts.p_type = posts_types.pt_id');
+        $this->db->where('posts.p_active!=4');
+        $this->db->where('posts.p_active!=0');
+        $this->db->group_by('posts_types.pt_id');
+        $data = $this->db->get();
+        $data = $data->result_array();
+        return $data;
+    }
+
+    private function get_cladding_with_count_posts()
+    {
+
+        $this->db->select('posts_cladding.pc_id as id , posts_cladding.pc_name_ar as name ,COUNT(posts.p_id) as countPosts');
+        $this->db->from('posts_cladding');
+        $this->db->join('posts', 'posts.p_typeOfCladding = posts_cladding.pc_id');
+        $this->db->where('posts.p_active!=4');
+        $this->db->where('posts.p_active!=0');
+        $this->db->group_by('posts_cladding.pc_id');
+        $data = $this->db->get();
+        $data = $data->result_array();
+        return $data;
+    }
+
+    private function get_tapu_with_count_posts()
+    {
+
+        $this->db->select('posts_tapu.pta_id as id , posts_tapu.pta_name_ar as name ,COUNT(posts.p_id) as countPosts');
+        $this->db->from('posts_tapu');
+        $this->db->join('posts', 'posts.p_prepareOfTapu = posts_tapu.pta_id');
+        $this->db->where('posts.p_active!=4');
+        $this->db->where('posts.p_active!=0');
+        $this->db->group_by('posts_tapu.pta_id');
+        $data = $this->db->get();
+        $data = $data->result_array();
+        return $data;
+    }
+
+    function GetOptionMaps()
+    {
+        $data = array();
+        $data['governorates'] = $this->get_governorates_with_count_posts();
+        $data['objective'] = $this->get_objective_whith_coint_posts();
+        $data['type'] = $this->get_type_with_count_posts();
+        $data['tapu'] = $this->get_tapu_with_count_posts();
+        $data['cladding'] = $this->get_cladding_with_count_posts();
+        return $data;
+    }
+
+    function search_maps($objective = null, $governorates = null, $type = null, $tapu = null, $rooms = null, $bathroom = null, $cladding = null, $limit = null)
+    {
+
+//        $this->db->where('p_active !=', 4);
+        $this->db->where('p_active !=', 4);
+        $this->db->where('p_active !=', 0);
+        if (isset($governorates) && $governorates != null) {
+            $this->db->where('p_governorate_id', $governorates);
+        }
+        if (isset($type) && $type != null) {
+            $this->db->where('p_type', $type);
+        }
+        if (isset($tapu) && $tapu != null) {
+            $this->db->where('p_prepareOfTapu', $tapu);
+        }
+        if (isset($cladding) && $cladding != null) {
+            $this->db->where('p_typeOfCladding', $cladding);
+        }
+        if (isset($rooms) && $rooms != null) {
+            if ($rooms < 5)
+                $this->db->where('p_numOfRooms', $rooms);
+            else
+                $this->db->where('p_numOfRooms >=', $rooms);
+
+        }
+        if (isset($bathroom) && $bathroom != null) {
+            if ($bathroom < 3)
+                $this->db->where('p_numOfBathRooms', $bathroom);
+            else
+                $this->db->where('p_numOfBathRooms >=', $bathroom);
+
+        }
+
+
+        if (isset($limit) && $limit != false) {
+            $this->db->limit(16, 16 * ($limit - 1));
+        } else if ($limit != false) {
+            $this->db->limit(16);
+
+        }
+
+        $this->db->from('posts p');
+        $this->db->join('posts_properties pp', 'pp.pp_id = p.p_typeOfProperty');
+        $this->db->join('posts_types pt', 'pt.pt_id = p.p_type');
+        $this->db->join('posts_cladding pc', 'pc.pc_id = p.p_typeOfCladding');
+        $this->db->join('posts_tapu pta', 'pta.pta_id = p.p_prepareOfTapu');
+        $this->db->join('posts_ownership_relation por', 'por.por_post_id = p.p_id');
+        $this->db->join('posts_ownership po', 'po.po_id = por.por_ownership_id');
+//        $this->db->join('posts_ownership po', 'po.po_id = por.por_ownership_id');
+        if (isset($objective) && $objective != null) {
+            $this->db->where('po.po_id', $objective);
+        }
+        $this->db->join('governorates g', 'g.g_id = p.p_governorate_id');
+        $this->db->join('users u', 'u.u_id = p.p_user_id');
+        $this->db->order_by('p.p_timestamp', 'DESC');
+        return $this->db->get()->result_array();
+
+    }
+
+    function update_price($id, $price)
+    {
+
+        $this->db->where('por_post_id', $id)->update('posts_ownership_relation', array('por_price' => $price));
+    }
+
+    function get_userInfo($id_user)
+    {
+        $data = $this->db->select('u_name as name , u_gsm as gsm')->get_where('users', array('u_id' => $id_user))->limit(1)->result_array();
+        return $data;
+    }
+
+    function get_user_active()
+    {
+        $this->db->from('posts p');
+        $this->db->join('posts_properties pp', 'pp.pp_id = p.p_typeOfProperty');
+
+    }
+
+//    select single value ;
+    function get_user_value($where, $select)
+    {
+//        where -> is array
+//        select => string
+        $data = $this->db->select($select)->where($where)->from('users')->get()->result_array();
+//        print_r($data);
+        if (isset($data[0][$select]))
+            $data = $data[0][$select];
+        else
+            $data = '';
+        return $data;
+    }
+
+    function updatePostsGsm($gsm, $post_id = null)
+    {
+
+        $data['p_gsm'] = $gsm;
+        if (isset($post_id))
+            $data['p_id'] = $post_id;
+        $dataUser = $this->db->like(array('u_gsm' => $gsm))->get('users')->result_array();
+
+        $dataPosts = $this->db->like($data)->get('posts')->result_array();
+        echo $this->db->last_query();
+        foreach ($dataPosts as $post) {
+            $this->db->where(array('p_id' => $post['p_id']))->update('posts', array(
+                'p_user_activtion' => $post['p_user_id'],
+                'p_user_id' => $dataUser[0]['u_id']
+            ));
+
+        }
+        $this->db->where(array('u_id' => $dataUser[0]['u_id']))->update('users', array('u_active_post' => 1));
+        return true;
+    }
+
+    function get_posts_by_gsm($gsm)
+    {
+        $this->db->from('posts p');
+        $this->db->join('posts_properties pp', 'pp.pp_id = p.p_typeOfProperty');
+        $this->db->join('posts_types pt', 'pt.pt_id = p.p_type');
+        $this->db->join('posts_cladding pc', 'pc.pc_id = p.p_typeOfCladding');
+        $this->db->join('posts_tapu pta', 'pta.pta_id = p.p_prepareOfTapu');
+        $this->db->join('posts_ownership_relation por', 'por.por_post_id = p.p_id');
+        $this->db->join('posts_ownership po', 'po.po_id = por.por_ownership_id');
+        $this->db->where('p.p_gsm', $gsm);
+        $this->db->join('governorates g', 'g.g_id = p.p_governorate_id');
+        $this->db->join('users u', 'u.u_id = p.p_user_id');
+        $Data = $this->db->get()->result_array();
+        return $Data;
+    }
+
+    function get_count_gsm_posts($gsm){
+        $count = $this->db->select('count(*) as cnt')->get_where('posts',array('posts.p_gsm'=>$gsm))->row();
+        $count = $count->cnt;
+        return $count;
+    }
+
+
+
 }

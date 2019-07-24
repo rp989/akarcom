@@ -1587,7 +1587,7 @@ background:url('../../images/slider/couple.png') no-repeat;
 .padding50{padding:50px;}
 .hpadding50{padding:0 50px;}
 .padding20title{padding:20px 20px 0px 20px;}
-.hpadding20{padding: 0px 20px 0px 20px;}
+.hpadding20{padding: 0px 20px 0px 20px; overflow: hidden;}
 .cpadding0{padding: 50px 50px 30px 50px;}
 .cpadding1{padding: 0px 30px 10px 50px;}
 
@@ -1736,7 +1736,7 @@ background:url('../../images/collapsearrow.png') scroll 0 -8px no-repeat;
 .collapsebtn.collapsed span.collapsearrow{
 width:9px;
 height:8px;
-float:right;
+float:left;
 margin-top:10px;
 background:url('../../images/collapsearrow.png') scroll 0 0px no-repeat;
 -webkit-transition:.3s;-moz-transition:.3s;transition:.3s;

@@ -183,7 +183,7 @@
                                 if (is_array($posts)) {
                                     foreach ($posts as $key => $post) { ?>
                                         <!-- START SINGLE PRODUCT ITEM -->
-                                        <div class="product-box col-sm-12 col-md-4 col-sm-12 col-xs-12"
+                                        <div class="product-box col-md-4 col-sm-4 col-xs-4 col-sm-12"
                                              style="    float: right;">
                                             <div class="inner-box">
                                                 <div class="image-box">

@@ -76,13 +76,9 @@ $query_builder = TRUE;
 $db['default'] = array(
 	'dsn'	=> '',
 	'hostname' => 'localhost',
-//	'username' => 'administration_r',
-//	'password' => 'AavCBonwLc',
-//	'database' => 'administration_realStatement',
-
-    'username' => 'root',
-	'password' => '',
-	'database' => 'realStatement',
+	'username' => 'root',
+	'password' => 'root',
+	'database' => 'ad_realstatement',
 	'dbdriver' => 'mysqli',
 	'dbprefix' => '',
 	'pconnect' => FALSE,

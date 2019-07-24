@@ -348,68 +348,6 @@ class MainScreen extends CI_Controller
 
     }
 
-    public function GetAllGovernoratesIOS()
-    {
-        $this->load->model('Posts');
-        $governorates = $this->Posts->GetAllGovernorate();
-        $info = array();
-        if ($governorates) {
-            $numGovernorate = 0;
-            foreach ($governorates as $governorate) {
-                if ($governorate['g_active'] == 1) {
-                    $info[$numGovernorate]['id'] = $governorate['g_id'];
-                    if ($this->language) {
-                        $info[$numGovernorate]['name'] = $governorate['g_name_en'];
-                    } else {
-                        $info[$numGovernorate]['name'] = $governorate['g_name_ar'];
-                    }
-                    if ($numGovernorate == 0){
-                        $info[$numGovernorate]['meridian'] = '46.696607';
-                        $info[$numGovernorate]['latitude'] = '24.670886';
-                    }elseif ($numGovernorate == 1){
-                        $info[$numGovernorate]['meridian'] = '39.122401';
-                        $info[$numGovernorate]['latitude'] = '21.330635';
-                    }
-                    elseif ($numGovernorate == 2){
-                        $info[$numGovernorate]['meridian'] = '41.538337';
-                        $info[$numGovernorate]['latitude'] = '19.849717';
-                    }
-                    elseif ($numGovernorate == 3){
-                        $info[$numGovernorate]['meridian'] = '42.636489';
-                        $info[$numGovernorate]['latitude'] = '18.229677';
-                    }
-                    elseif ($numGovernorate == 4){
-                        $info[$numGovernorate]['meridian'] = '39.254180';
-                        $info[$numGovernorate]['latitude'] = '24.487461';
-                    }
-                    elseif ($numGovernorate == 5){
-                        $info[$numGovernorate]['meridian'] = '42.372933';
-                        $info[$numGovernorate]['latitude'] = '22.106317';
-                    }
-                    elseif ($numGovernorate == 6){
-                        $info[$numGovernorate]['meridian'] = '46.194503';
-                        $info[$numGovernorate]['latitude'] = '18.104413';
-                    }
-                    elseif ($numGovernorate == 7){
-                        $info[$numGovernorate]['meridian'] = '39.517736';
-                        $info[$numGovernorate]['latitude'] = '30.259364';
-                    }
-                    elseif ($numGovernorate == 8){
-                        $info[$numGovernorate]['meridian'] = '36.694311';
-                        $info[$numGovernorate]['latitude'] = '28.323725';
-                    }
-
-
-                    $numGovernorate++;
-                }
-            }
-            $this->SendSuccessData($info);
-        } else {
-            $this->SendMessage(-13, $this->lang->line('no_data_found'));
-        }
-
-    }
-
     public function GetFilters()
     {
         $this->load->model('Posts');

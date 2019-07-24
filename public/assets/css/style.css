@@ -707,6 +707,7 @@ ul.work li.active {
 
 .product-box {
 	margin-top: 30px;
+    margin-bottom: 18px;
 }
 
 .product-box .inner-box{
@@ -752,7 +753,7 @@ ul.work li.active {
 	left:0px;
 	bottom:0px;
 	font-weight:600;
-	letter-spacing:1px;
+	/*letter-spacing:1px;*/
 	line-height:24px;
 	padding:6px 24px;
 	text-align:center;
@@ -932,7 +933,7 @@ ul.work li.active {
 	background:#337ab7;
 	font-size:12px;
 	text-transform:uppercase;
-	letter-spacing:1px;
+	/*letter-spacing:1px;*/
 	font-weight:600;
 	color:#ffffff;
 	border-radius:2px;	
@@ -1605,7 +1606,7 @@ ul.work li.active {
 
 .footer-text h6 {
     text-transform: uppercase;
-    letter-spacing: 3px;
+    /*letter-spacing: 3px;*/
     position: relative;
     color: #fff;
 }
@@ -1858,7 +1859,7 @@ ul.work li.active {
 }
 
 .overview ul li {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.02);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.09);
     padding: 8px 0;
 }
 
@@ -1927,4 +1928,20 @@ ul.work li.active {
 }
 .logo a p{
     text-align: left;
+}
+
+.home-brief {
+    direction: rtl!important;
+}
+
+.home-brief div {
+    direction: rtl;
+    border-bottom: 1px solid #EEE;
+    margin-bottom: 10px;
+}
+
+.home-brief div h5 {
+    font-size: 19px;
+    display: inline-block;
+    font-weight: bold;
 }

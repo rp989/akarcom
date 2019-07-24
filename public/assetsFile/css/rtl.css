@@ -2,6 +2,11 @@ body{
     direction: rtl;
     /*letter-spacing: 0;*/
 }
+
+.header-top-area{
+    direction: ltr;
+}
+
 .mainmenu .navbar-nav li a {
     font-size: 26px;
 }
@@ -13,9 +18,36 @@ body{
 }
 .navbar-collapse{
     padding-left: 160px!important;
+    padding-top: 20px;
 }
 .header-text h2{
     /*letter-spacing: 3px;*/
+}
+@media (min-width: 768px ) and (max-width:991px ) {
+    .header-text{
+        margin-top:115px;
+    }
+    .navbar-collapse{
+        padding-left: 89px!important;
+        padding-top:unset;
+    }
+
+}
+
+.abss{
+    position: absolute;
+    right: 0;
+    top: -27px;
+}
+
+.navbar-toggle .icon-bar {
+
+    /*margin-block-start: -40px;*/
+}
+
+.menu-bg .mainmenu .navbar-nav li a {
+
+    font-size:  26px;;
 }
 .header-text p{
     /*letter-spacing: 1px;*/
@@ -66,4 +98,23 @@ float: left;
 }
 .product-box{
     float: right;
+}
+
+@media (min-width: 768px ) and (max-width:991px ) {
+  .mgTop{
+      margin-top: 115px;
+  }
+
+
+
+}
+
+@media (min-width: 768px ) and (max-width:991px ) {
+    .paddL{
+        padding-left: 122px!important;
+    }
+    .paddL2{
+        padding-left: 155px!important;
+    }
+
 }

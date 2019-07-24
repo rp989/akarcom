@@ -2,11 +2,13 @@
 include_once "include/templet/nav.php";
 
 ?>
-<link rel="stylesheet" type="text/css" href="<?php echo base_url()?>public/assetsAdmin/datatable/datatables.css"/>
-<link rel="stylesheet" type="text/css" href="<?php echo base_url()?>public/assetsAdmin/datatable/DataTables-1.10.16/css/dataTables.foundation.min.css"/>
-<link rel="stylesheet" type="text/css" href="<?php echo base_url()?>public/assetsAdmin/datatable/Responsive-2.2.0/css/responsive.foundation.min.css"/>
+<link rel="stylesheet" type="text/css" href="<?php echo base_url() ?>public/assetsAdmin/datatable/datatables.css"/>
+<link rel="stylesheet" type="text/css"
+      href="<?php echo base_url() ?>public/assetsAdmin/datatable/DataTables-1.10.16/css/dataTables.foundation.min.css"/>
+<link rel="stylesheet" type="text/css"
+      href="<?php echo base_url() ?>public/assetsAdmin/datatable/Responsive-2.2.0/css/responsive.foundation.min.css"/>
 
-<div class="container admin" >
+<div class="container admin">
     <div class="pageName">
         <?php echo _productsList ?>
     </div>
@@ -38,10 +40,10 @@ include_once "include/templet/nav.php";
 </div>
 
 
-
-<script src="assets/js/proudacts_list.js"></script>
-<script type="text/javascript" src="<?php echo base_url()?>public/assetsAdmin/datatable/DataTables-1.10.16/js/jquery.dataTables.min.js"></script>
-<script type="text/javascript" src="<?php echo base_url()?>public/assetsAdmin/datatable/DataTables-1.10.16/js/dataTables.bootstrap.min.js"></script>
+<script type="text/javascript"
+        src="<?php echo base_url() ?>public/assetsAdmin/datatable/DataTables-1.10.16/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript"
+        src="<?php echo base_url() ?>public/assetsAdmin/datatable/DataTables-1.10.16/js/dataTables.bootstrap.min.js"></script>
 <link rel="stylesheet" type="text/css"
       href="https://cdn.datatables.net/v/dt/jszip-2.5.0/af-2.3.0/b-1.5.2/b-colvis-1.5.2/b-flash-1.5.2/b-html5-1.5.2/b-print-1.5.2/cr-1.5.0/sl-1.2.6/datatables.min.css"/>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/pdfmake.min.js"></script>
@@ -52,19 +54,22 @@ include_once "include/templet/nav.php";
 <script type="text/javascript">
     var table;
     $(document).ready(function () {
-        // "language": {
-        //     "url": "//cdn.datatables.net/plug-ins/1.10.16/i18n/Arabic.json"
-        // },
+
         table = $('#table').DataTable({
+
             "responsive": true,
             "processing": true,
             "serverSide": true,
             "order": [],
             "searching": true,
             "select": true,
+
             "ajax": {
                 "url": "<?php echo base_url()?>PostsData",
                 "type": "POST"
+            },
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.10.16/i18n/Arabic.json"
             },
             "columns": [
                 {
@@ -88,34 +93,31 @@ include_once "include/templet/nav.php";
                     "targets": [0],
                     "orderable": false
                 }
-            ]
-        });
-        new $.fn.dataTable.Buttons(table, {
-            buttons: [
-                'copy', 'excel', 'pdf', 'print'
-            ]
+            ],
+
+
         });
 
         table.buttons().container().appendTo($('.col-sm-6:eq(0)', table.table().container()));
 
-        $(document).on("click",".activeTag",function(e) {
+        $(document).on("click", ".activeTag", function (e) {
             e.preventDefault();
             var id = $(this).attr('data-id');
             var description = $(this).attr('data-description');
             var active = $(this).attr('data-active');
             $.ajax({
-                url: "<?php echo base_url();?>adminArea/TagsEditActive/"+id+"/"+active+ "/" + description,
+                url: "<?php echo base_url();?>adminArea/TagsEditActive/" + id + "/" + active + "/" + description,
                 type: "POST",
                 data: {},
                 cache: false,
                 success: function (data) {
                     var data = JSON.parse(data);
-                    noti(data.title,data.msg,data.type);
+                    noti(data.title, data.msg, data.type);
                     table.ajax.reload(null, false);
                 }
             });
         });
-        $(document).on("click",".orderTag",function(e) {
+        $(document).on("click", ".orderTag", function (e) {
             e.preventDefault();
             var id = $(this).attr('data-id');
             $.confirm({
@@ -133,18 +135,18 @@ include_once "include/templet/nav.php";
                         btnClass: 'btn-blue',
                         action: function () {
                             var num = this.$content.find('.name').val();
-                            if(!num){
+                            if (!num) {
                                 $.alert('provide a valid number');
                                 return false;
                             }
                             $.ajax({
-                                url: "<?php echo base_url();?>adminArea/TagsEditOrder/"+id+"/"+num,
+                                url: "<?php echo base_url();?>adminArea/TagsEditOrder/" + id + "/" + num,
                                 type: "POST",
                                 data: {},
                                 cache: false,
                                 success: function (data) {
                                     var data = JSON.parse(data);
-                                    noti(data.title,data.msg,data.type);
+                                    noti(data.title, data.msg, data.type);
                                     table.ajax.reload(null, false);
                                 }
                             });

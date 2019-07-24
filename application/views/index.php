@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 
-	
+
 <!-- Mirrored from demo.dueza.com/property-html/property/black-color/ by HTTrack Website Copier/3.x [XR&CO'2014], Mon, 29 Oct 2018 17:37:29 GMT -->
 <head>
 		<!-- META -->
@@ -114,7 +114,7 @@
 			</div>
 		</header>
 		<!-- / END HOMEPAGE DESIGN AREA -->
-		
+
 		<!-- START INTRO DESIGN AREA -->
 		<section id="intro" class="intro-area section-padding">
 			<div class="container">
@@ -144,7 +144,7 @@
 			</div><!-- / END CONTAINER -->
 		</section>
 		<!-- / END INTRO DESIGN AREA -->
-		
+
 		<!-- START PRODUCTS SECTION DESIGN AREA -->
 		<section id="products" class="products-area section-padding">
 			<div class="container">
@@ -158,8 +158,8 @@
 						</div>
 					</div>
 				</div>
-				
-				
+
+
 				<div class="row">
 					<div class="product-menu">
 						<!-- START PRODUCT NAV FILTER -->
@@ -172,7 +172,7 @@
 							</ul>
 						</div>
 						<!-- / END PRODUCT NAV FILTER -->
-						
+
 						<!-- START PRODUCT DETAILS-->
 						<div class="product-menu-details">
 							<div class="col-md-12">
@@ -485,7 +485,7 @@
 										</div>
 										<!-- / END ROW -->
 									</div>
-								
+
 								</div>
 							</div>
 						</div>
@@ -493,7 +493,7 @@
 					</div>
 				</div>
 			<!--</div>-->
-			
+
 			</div>
 		</section>
 		<!-- / END PRODUCTS SECTION DESIGN AREA -->
@@ -525,7 +525,7 @@
 						</div>
 					</div>
 				</div>
-				
+
 				<!-- START WHY US DESIGN AREA -->
 				<div class="row">
 					<!-- START SINGLE WHY US DESIGN AREA -->
@@ -728,7 +728,7 @@
 			</div>
 		</div>
 		<!-- / END SCROOL UP DESIGN AREA -->
-		
+
 		<!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
 		<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
 		<!--[if lt IE 9]>

@@ -1,26 +1,19 @@
-<?php
-/**
- * Created by PhpStorm.
- * User: riadsasila
- * Date: 1/18/19
- * Time: 11:31 AM
- */
-?>
+
 <html>
 <head>
-    <title><?php echo _forgot_password?></title>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link href="<?php echo base_url();?>public/assetsAdmin/css/bootstrap.min.css" rel="stylesheet"/>
-<link href="<?php echo base_url();?>public/assetsAdmin/css/font-awesome.min.css" rel="stylesheet"/>
-<link rel="stylesheet" type="text/css" href="<?php echo base_url();?>public/assetsAdmin/fonts/material-design-iconic-font.css">
-<link href="<?php echo base_url();?>public/assetsAdmin/css/style/them.css" rel="stylesheet"/>
-<link rel="shortcut icon" href="<?php echo base_url();?>public/assetsAdmin/img/iconTitle.png" />
-<link rel="stylesheet" type="text/css" href="<?php echo base_url();?>public/assetsAdmin/css/style/util.css">
-<link rel="stylesheet" type="text/css" href="<?php echo base_url();?>public/assetsAdmin/css/style/main.css">
-<!--    --><?php //if(isset($_SESSION['lang'])&&$_SESSION['lang']=="Ar"){ ?>
-	<link rel="stylesheet" type="text/css" href="<?php echo base_url();?>public/assetsAdmin/css/style/rtl.css">
-<!--    --><?php // }?>
+    <title><?php echo _logIn?></title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="<?php echo base_url();?>public/assetsAdmin/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="<?php echo base_url();?>public/assetsAdmin/css/font-awesome.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" type="text/css" href="<?php echo base_url();?>public/assetsAdmin/fonts/material-design-iconic-font.css">
+    <link href="<?php echo base_url();?>public/assetsAdmin/css/style/them.css" rel="stylesheet"/>
+    <link rel="shortcut icon" href="<?php echo base_url();?>public/assetsAdmin/img/iconTitle.png" />
+    <link rel="stylesheet" type="text/css" href="<?php echo base_url();?>public/assetsAdmin/css/style/util.css">
+    <link rel="stylesheet" type="text/css" href="<?php echo base_url();?>public/assetsAdmin/css/style/main.css">
+    <!--    --><?php //if(isset($_SESSION['lang'])&&$_SESSION['lang']=="Ar"){ ?>
+    <link rel="stylesheet" type="text/css" href="<?php echo base_url();?>public/assetsAdmin/css/style/rtl.css">
+    <!--    --><?php // }?>
 </head>
 <body class="bgBlue">
 <div class="limiter" style="background-image: url('<?php echo base_url();?>public/assetsAdmin/img/bg.png');background-size: cover">

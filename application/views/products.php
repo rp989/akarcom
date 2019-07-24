@@ -48,8 +48,9 @@
     <link rel="stylesheet" href="<?php echo base_url(); ?>public/assetsFile/css/ion.rangeSlider.css">
     <link href="<?php echo base_url(); ?>public/examples/carousel/carousel.css" rel="stylesheet">
 
-    <!-- rtl CSS -->
-    <link rel="stylesheet" href="<?php echo base_url(); ?>public/assetsFile/css/rtl.css">
+        <!-- rtl CSS -->
+        <link rel="stylesheet" href="<?php echo base_url(); ?>public/assetsFile/css/rtl.css">
+
 
 
     <!-- bin/jquery.slider.min.css -->
@@ -102,9 +103,8 @@
                 <div class="col-md-3">
                     <!-- START LOGO DESIGN AREA -->
                     <div class="logo">
-                        <a href="<?php echo base_url(); ?>">
-                            <img src="<?php echo base_url(); ?>public/assetsFile/images/akarkom.svg"
-                                 style="width: 75px;padding-bottom: 8px;" width="75px" alt="akarkom">
+                        <a href="<?php echo base_url();?>">
+                            <img src="<?php echo base_url();?>public/assetsFile/images/akarkom.svg" style="width: 75px;padding-bottom: 8px;" width="75px" alt="akarkom">
                         </a>
                     </div>
                 </div>
@@ -114,8 +114,7 @@
                     <div class="mainmenu">
                         <div class="navbar navbar-nobg">
                             <div class="navbar-header">
-                                <button type="button" class="navbar-toggle abss" data-toggle="collapse"
-                                        data-target=".navbar-collapse">
+                                <button type="button" class="navbar-toggle abss" data-toggle="collapse" data-target=".navbar-collapse">
                                     <span class="sr-only">Toggle navigation</span>
                                     <span class="icon-bar"></span>
                                     <span class="icon-bar"></span>
@@ -124,15 +123,9 @@
                             </div>
                             <div class="navbar-collapse collapse paddL paddL2">
                                 <ul class="nav navbar-nav navbar-right">
-                                    <li class="active"><a class="smoth-scroll"
-                                                          href="<?php echo base_url(); ?>"><?php echo $this->lang->line('Home'); ?>
-                                            <div class="ripple-wrapper"></div>
-                                        </a></li>
-                                    <li><a class="smoth-scroll"
-                                           href="#contact"><?php echo $this->lang->line('contact'); ?></a></li>
-                                    <li><a class="smoth-scroll"
-                                           href="<?php echo base_url(); ?>SignIn"><?php echo $this->lang->line('Sign_in'); ?></a>
-                                    </li>
+                                    <li class="active"><a class="smoth-scroll" href="<?php echo base_url();?>"><?php echo $this->lang->line('Home'); ?> <div class="ripple-wrapper"></div></a></li>
+                                    <li><a class="smoth-scroll" href="#contact"><?php echo $this->lang->line('contact'); ?></a></li>
+                                    <li><a class="smoth-scroll" href="<?php echo base_url(); ?>SignIn"><?php echo $this->lang->line('Sign_in'); ?></a></li>
                                 </ul>
                             </div>
 
@@ -168,9 +161,8 @@
         <div class="row" style="margin-right: 0;">
 
             <!-- START SIDEBAR DESIGN AREA -->
-            <div class="col-md-9 col-xs-12 wow fadeInUp" style="padding-right: 30px;" data-wow-duration="2s"
-                 data-wow-delay="0.1s" data-wow-offset="0">
-                <div class="recent-post single-sidebar">
+            <div class="col-md-9 col-xs-12 wow fadeInUp" style="padding-right: 30px;" data-wow-duration="2s" data-wow-delay="0.1s" data-wow-offset="0">
+                <div class="recent-post single-sidebar" >
 
                     <?php
                     if (is_array($posts)) {
@@ -179,24 +171,16 @@
                             <div class="product-box col-md-4 col-sm-4 col-xs-4 col-sm-12" style="    float: right;">
                                 <div class="inner-box">
                                     <div class="image-box">
-                                        <figure class="image"><a
-                                                    href="<?php echo base_url(); ?>Details/<?php echo $post['id']; ?>"><img
-                                                        src="<?php echo base_url(); ?>public/assetsFile/images/products/product1.jpg"
-                                                        alt=""></a></figure>
+                                        <figure class="image"><a href="<?php echo base_url();?>Details/<?php echo $post['id'];?>"><img src="<?php echo base_url();?>public/assetsFile/images/products/product1.jpg" alt=""></a></figure>
                                         <div class="product-category">دمشق</div>
                                         <div class="product-price">5</div>
                                     </div>
                                     <div class="lower-content">
                                         <div class="home-brief">
-                                            <div class="info"><h5>نوع العقار : </h5>
-                                                <span> <?php echo $post['type']['name'] . ' ' . $post['typeOfProperty']['name']; ?></span>
-                                            </div>
-                                            <div class="info"><h5>عدد الغرف : </h5>
-                                                <span> <?php echo $post['numOfRooms']; ?></span></div>
-                                            <div class="info"><h5>المساحة : </h5>
-                                                <span> <?php echo $post['areaSpace']; ?></span></div>
-                                            <div class="info"><h5>السعر : </h5>
-                                                <span> <?php echo $post['priceOfMeter']; ?></span></div>
+                                            <div class="info"><h5>نوع العقار : </h5><span> <?php echo $post['type']['name'].' '.$post['typeOfProperty']['name'];?></span></div>
+                                            <div class="info"><h5>عدد الغرف : </h5><span> <?php echo $post['numOfRooms']; ?></span></div>
+                                            <div class="info"><h5>المساحة : </h5><span> <?php echo  $post['areaSpace']; ?></span></div>
+                                            <div class="info"><h5>السعر : </h5><span> <?php echo  $post['priceOfMeter']; ?></span></div>
 
                                         </div>
                                         <div class="view-etails-btn clearfix">
@@ -218,7 +202,9 @@
                 </div>
             </div>
             <div class="col-md-3 col-xs-12 filters offset-0">
-                <?php foreach ($data as $key => $parts) { ?>
+                <?php foreach ($data
+
+                as $key => $parts) { ?>
                 <div class="row" style="background: whitesmoke;margin-top: 1px;">
                     <button type="button" class="collapsebtn last" data-toggle="collapse"
                             data-target="#<?php echo $key; ?>">
@@ -289,10 +275,11 @@
                 <div class="clearfix"></div>
             </div>
         </div>
+
     </div>
 </div>
 </div>
-</div>
+    </div>
 
 <!-- / END SINGLE BLOG POST DESIGN AREA -->
 <!-- START FOOTER DESIGN AREA -->
@@ -458,7 +445,7 @@
                 189000000, 190000000, 191000000, 192000000, 193000000, 194000000, 195000000, 196000000, 197000000, 198000000, 199000000, 200000000, 201000000, 202000000, 203000000, 204000000,
                 205000000, 206000000, 207000000, 208000000, 209000000, 210000000, 211000000, 212000000, 213000000, 214000000, 215000000, 216000000, 217000000, 218000000, 219000000, 220000000,
                 221000000, 222000000, 223000000, 224000000, 225000000, 226000000, 227000000, 228000000, 229000000, 230000000, 231000000, 232000000, 233000000, 234000000, 235000000, 236000000,
-                237000000, 238000000, 239000000, 240000000, 241000000, 242000000, 243000000, 244000000, 245000000, 246000000, 247000000, 248000000, 249000000, 250000000, "∞"
+                237000000, 238000000, 239000000, 240000000, 241000000, 242000000, 243000000, 244000000, 245000000, 246000000, 247000000, 248000000, 249000000, 250000000,"∞"
             ],
             from: 0,
             to: 425,

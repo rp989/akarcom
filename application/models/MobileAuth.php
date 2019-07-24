@@ -291,6 +291,7 @@ class MobileAuth extends CI_Model
         $data = array("identifier" => "First","password" => "last");
 
         $postdata = json_encode($data);
+
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
@@ -310,6 +311,4 @@ class MobileAuth extends CI_Model
         $this->db->from('posts');
         return $this->db->get()->result_array();
     }
-
-
 }
